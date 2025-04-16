@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<iso:CertificateInstallationReq xmlns:iso="urn:iso:15118:2:2013:MsgDef" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <iso:Id>id1</iso:Id>
+  <iso:OEMProvisioningCert>BASE64_ENCODED_OEM_PROVISIONING_CERT</iso:OEMProvisioningCert>
+  <iso:ListOfRootCertificateIDs>
+    <iso:RootCertificateID>
+      <iso:Certificate>BASE64_ENCODED_ROOT_CERTIFICATE</iso:Certificate>
+    </iso:RootCertificateID>
+  </iso:ListOfRootCertificateIDs>
+  <iso:DHParams>BASE64_ENCODED_DH_PARAMS</iso:DHParams>
+  <iso:ContractSignatureCertChain>
+    <iso:Certificate>BASE64_ENCODED_CONTRACT_CERT</iso:Certificate>
+    <iso:SubCertificates>
+      <iso:Certificate>BASE64_ENCODED_SUB_CERT1</iso:Certificate>
+      <iso:Certificate>BASE64_ENCODED_SUB_CERT2</iso:Certificate>
+    </iso:SubCertificates>
+  </iso:ContractSignatureCertChain>
+  <iso:eMAID>EMAID_VALUE</iso:eMAID>
+  <iso:IMSI>IMSI_VALUE</iso:IMSI>
+</iso:CertificateInstallationReq> 

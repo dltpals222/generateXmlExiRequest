@@ -1,0 +1,7 @@
+node_modules
+key
+cert
+temp
+out
+*.key
+*.key.pem

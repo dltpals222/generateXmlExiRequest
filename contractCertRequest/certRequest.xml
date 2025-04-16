@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ns7:V2G_Message xmlns:ns7="urn:iso:15118:2:2013:MsgDef"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:ns3="http://www.w3.org/2001/XMLSchema"
+        xmlns:ns4="http://www.w3.org/2000/09/xmldsig#"
+        xmlns:ns5="urn:iso:15118:2:2013:MsgBody"
+        xmlns:ns6="urn:iso:15118:2:2013:MsgDataTypes"
+        xmlns:ns8="urn:iso:15118:2:2013:MsgHeader">
+        <ns7:Header>
+                <ns8:SessionID>F0BA2ACCCFFF3951</ns8:SessionID>
+                <ns4:Signature>
+                        <ns4:SignedInfo>
+                                <ns4:CanonicalizationMethod
+                                        Algorithm="http://www.w3.org/TR/canonical-exi/" />
+                                <ns4:SignatureMethod
+                                        Algorithm="http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256" />
+                                <ns4:Reference URI="#ID1">
+                                        <ns4:Transforms>
+                                                <ns4:Transform
+                                                        Algorithm="http://www.w3.org/TR/canonical-exi/" />
+                                        </ns4:Transforms>
+                                        <ns4:DigestMethod
+                                                Algorithm="http://www.w3.org/2001/04/xmlenc#sha256" />
+                                        <ns4:DigestValue>HH4T4uvvdCEjDeMUu2cSV0O16GQd4xFQv0XCl9oXC10=
+                                        </ns4:DigestValue>
+                                </ns4:Reference>
+                        </ns4:SignedInfo>
+                        <ns4:SignatureValue>MEUCIGjMdPYqbvsDaigk/yhs/hY3TDve62syQwPmerxpSc92AiEA8srR5DucTqYAqOcdqK181HAjkpLWnjQdx/Yj+y1WIg0=
+                        </ns4:SignatureValue>
+                </ns4:Signature>
+        </ns7:Header>
+        <ns7:Body>
+                <ns5:CertificateInstallationReq
+                        ns5:Id="ID1">
+                        <ns5:OEMProvisioningCert>MIIBtDCCAVqgAwIBAgIUDlc/Y2hmBs6GJLIKmetLi4rXk9UwCgYIKoZIzj0EAwIwKzEVMBMGA1UEAwwMT0VNIFN1YiBDQSAxMRIwEAYDVQQKDAlsaW5ld29ybGQwHhcNMjUwMjI4MDExODAyWhcNMjUwNTI5MDExODAyWjBFMRowGAYDVQQDDBExYTFzMnMzZDRmMmYyMWQxMTESMBAGA1UECgwJbGluZXdvcmxkMRMwEQYKCZImiZPyLGQBGRYDT0VNMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEFSp8QxS69IVMoclg3ugHEns0PCVQ71fCqFZNzBjz5horaZAOWdfj1O3mWeNe89QEKAbf3LhDmsyE9HKzuKnie6NCMEAwHQYDVR0OBBYEFLLyzudGaQjmK+Pla9FtJX7uhGDUMB8GA1UdIwQYMBaAFJ6VnFP2Q6lza+9hiSggIBb3sbYrMAoGCCqGSM49BAMCA0gAMEUCIQCYXaLjoq5XgrxZ2EFyhtGrSBqISC2S/dXZF/aLsK8W8wIgEW+vsLAA2JJITDsbFv97KAL3MBjNDaY6zD4YaiVptNc=
+                        </ns5:OEMProvisioningCert>
+                        <ns5:ListOfRootCertificateIDs>
+                                <ns6:RootCertificateID>
+                                        <ns4:X509IssuerName>DC=V2G,C=NL,O=ElaadNL,CN=V2G RootCA ECDSA
+                                                ElaadNL</ns4:X509IssuerName>
+                                        <ns4:X509SerialNumber>0</ns4:X509SerialNumber>
+                                </ns6:RootCertificateID>
+                                <ns6:RootCertificateID>
+                                        <ns4:X509IssuerName>CN=VEDECOM V2G Root CA,O=VEDECOM,DC=V2G
+                                        </ns4:X509IssuerName>
+                                        <ns4:X509SerialNumber>17049624110352655129</ns4:X509SerialNumber>
+                                </ns6:RootCertificateID>
+                                <ns6:RootCertificateID>
+                                        <ns4:X509IssuerName>CN=MO Root CA, O=lineworld
+                                        </ns4:X509IssuerName>
+                                        <ns4:X509SerialNumber>623035541365619109990800844843123113279012277797</ns4:X509SerialNumber>
+                                </ns6:RootCertificateID>
+                        </ns5:ListOfRootCertificateIDs>
+                </ns5:CertificateInstallationReq>
+        </ns7:Body>
+</ns7:V2G_Message>
