@@ -1,0 +1,72 @@
+<CertificateInstallationReq xmlns="urn:iso:std:iso:15118:-20:CommonMessages"
+                            xmlns:v2gci_ct="urn:iso:std:iso:15118:-20:CommonTypes"
+                            xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+                            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                            xsi:schemaLocation="urn:iso:std:iso:15118:-20:CommonMessages V2G_CI_CommonMessages.xsd">
+
+    <!-- V2GRequestType 기반 속성 -->
+    <v2gci_ct:Header>
+        <v2gci_ct:SessionID>0102030405060708</v2gci_ct:SessionID>
+        <v2gci_ct:TimeStamp>1625667800000</v2gci_ct:TimeStamp>
+    </v2gci_ct:Header>
+
+    <!-- 디지털 서명 -->
+    <ds:Signature Id="Signature1">
+        <ds:SignedInfo>
+            <ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+            <ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha256"/>
+            <ds:Reference URI="#CertificateInstallReq001">
+                <ds:Transforms>
+                    <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+                </ds:Transforms>
+                <ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256"/>
+                <ds:DigestValue>ABCDEF1234567890==</ds:DigestValue>
+            </ds:Reference>
+        </ds:SignedInfo>
+        <ds:SignatureValue>MIICdzCCAeCgAwIBAgIJAO...==</ds:SignatureValue>
+        <ds:KeyInfo>
+            <ds:X509Data>
+                <ds:X509Certificate>
+                    MIIDdzCCAl+gAwIBAgIEbLz9xTANBgkqhkiG9w0BAQUFADBv...
+                </ds:X509Certificate>
+            </ds:X509Data>
+        </ds:KeyInfo>
+    </ds:Signature>
+
+    <!-- OEMProvisioningCertificateChain -->
+    <OEMProvisioningCertificateChain Id="CertChain001">
+        <Certificate>
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArX...==
+        </Certificate>
+        <SubCertificates>
+            <Certificate>MIID...subcert1==</Certificate>
+            <Certificate>MIID...subcert2==</Certificate>
+        </SubCertificates>
+    </OEMProvisioningCertificateChain>
+
+    <!-- ListOfRootCertificateIDs -->
+    <ListOfRootCertificateIDs>
+        <v2gci_ct:RootCertificateID>
+            <xmlsig:X509IssuerSerial>
+                <xmlsig:X509IssuerName>RootCA1</xmlsig:X509IssuerName>
+                <xmlsig:X509SerialNumber>12345</xmlsig:X509SerialNumber>
+            </xmlsig:X509IssuerSerial>
+        </v2gci_ct:RootCertificateID>
+        <v2gci_ct:RootCertificateID>
+            <xmlsig:X509IssuerSerial>
+                <xmlsig:X509IssuerName>RootCA2</xmlsig:X509IssuerName>
+                <xmlsig:X509SerialNumber>67890</xmlsig:X509SerialNumber>
+            </xmlsig:X509IssuerSerial>
+        </v2gci_ct:RootCertificateID>
+    </ListOfRootCertificateIDs>
+
+    <!-- MaximumContractCertificateChains -->
+    <MaximumContractCertificateChains>2</MaximumContractCertificateChains>
+
+    <!-- Optional PrioritizedEMAIDs -->
+    <PrioritizedEMAIDs>
+        <EMAID>DE-EMA1</EMAID>
+        <EMAID>DE-EMA2</EMAID>
+    </PrioritizedEMAIDs>
+
+</CertificateInstallationReq>

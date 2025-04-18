@@ -11,6 +11,7 @@
   "description": "",
   "dependencies": {
     "asn1js": "^3.0.5",
+    "libxmljs2": "^0.35.0",
     "node-fetch": "^3.3.2",
     "pkijs": "^3.2.5",
     "pvutils": "^1.1.3",
