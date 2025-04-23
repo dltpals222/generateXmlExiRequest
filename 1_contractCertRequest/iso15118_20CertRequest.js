@@ -1,3 +1,41 @@
+/**
+ * ISO 15118-20 인증서 관련 요청 (CertificateInstallationReq, CertificateUpdateReq 등)을
+ * 지정된 XML 파일 내용을 사용하여 서버로 전송하는 스크립트입니다.
+ * 이 스크립트는 EXI 인코딩을 수행하지 않고 원본 XML을 전송합니다.
+ *
+ * [실행 방법]
+ * node iso15118_20CertRequest.js [옵션]
+ *
+ * [옵션]
+ * -f <파일명>, --file <파일명>
+ *   설명: 요청에 사용할 XML 파일의 이름을 지정합니다.
+ *        이 파일은 반드시 'out' 디렉토리 내에 위치해야 합니다.
+ *   기본값: 'certificateInstallationReq_20.xml'
+ *
+ * --action <액션>
+ *   설명: 서버에 요청할 액션을 지정합니다. ('install' 또는 'update')
+ *   기본값: 'install'
+ *
+ * [실행 예시]
+ * 1. 기본값으로 실행 (install 액션, out/certificateInstallationReq_20.xml 파일 사용):
+ *    node iso15118_20CertRequest.js
+ *
+ * 2. 'update' 액션으로 실행 (out/certificateInstallationReq_20.xml 파일 사용):
+ *    node iso15118_20CertRequest.js --action update
+ *
+ * 3. 특정 XML 파일 사용 (install 액션):
+ *    node iso15118_20CertRequest.js --file my_request.xml
+ *    node iso15118_20CertRequest.js -f my_request.xml
+ *
+ * 4. 특정 XML 파일과 'update' 액션 사용:
+ *    node iso15118_20CertRequest.js --file my_request.xml --action update
+ *    node iso15118_20CertRequest.js --action update -f my_request.xml (옵션 순서 무관)
+ *
+ * [주의사항]
+ * - 지정된 XML 파일이 'out' 디렉토리에 존재해야 합니다.
+ * - 요청을 받을 서버 (기본 설정: http://localhost:7600)가 실행 중이어야 합니다.
+ * - 'node-fetch' 라이브러리가 필요합니다 (`npm install node-fetch`).
+ */
 const fsPromises = require('fs').promises; // Use promises API
 const fs = require('fs'); // Keep sync API for existsSync if needed
 const { spawn } = require('child_process'); // Change to spawn
@@ -18,165 +56,13 @@ const colors = {
 };
 
 // --- EXIConverter 클래스 정의 시작 ---
-const JAR_PATH = path.join(__dirname, 'V2Gdecoder.jar');
+// const JAR_PATH = path.join(__dirname, 'V2Gdecoder.jar'); // EXIConverter 사용 안함
 
-class EXIConverter {
-    async encodeToEXI(xmlString) {
-        const tempXmlFile = path.join(__dirname, 'temp.xml');
-        const tempExiFile = path.join(__dirname, 'temp.xml.exi');
-        
-        try {
-            // 입력 XML 검증 및 로깅
-            console.log(`${colors.dim}Input XML length: ${xmlString?.length}${colors.reset}`);
-            if (!xmlString || xmlString.trim() === '') {
-                throw new Error('Empty XML input');
-            }
-
-            // XML 파일 쓰기 전 로깅
-            console.log(`${colors.dim}Writing XML to temp file: ${tempXmlFile}${colors.reset}`);
-            await fsPromises.writeFile(tempXmlFile, xmlString);
-            
-            // 파일이 제대로 써졌는지 확인
-            const writtenXml = await fsPromises.readFile(tempXmlFile, 'utf8');
-            console.log(`${colors.dim}Written XML length: ${writtenXml.length}${colors.reset}`);
-
-            let executeJavaCommandArgs = [
-                '-jar', JAR_PATH,
-                '-x',
-                '-f', tempXmlFile,
-                '-o', tempExiFile
-            ];
-
-            // Java 명령어 실행
-            console.log(`${colors.fg.blue}Executing Java command for EXI encoding...${colors.reset}`);
-            await this.executeJavaCommand(executeJavaCommandArgs);
-            
-            // EXI 파일 읽기 전 존재 여부 확인
-            const exiExists = await fsPromises.access(tempExiFile)
-                .then(() => true)
-                .catch(() => false);
-            console.log(`${colors.dim}EXI file exists: ${exiExists}${colors.reset}`);
-
-            // EXI 파일 읽기
-            console.log(`${colors.dim}Reading EXI file...${colors.reset}`);
-            const exiData = await fsPromises.readFile(tempExiFile);
-            console.log(`${colors.dim}EXI data length: ${exiData.length}${colors.reset}`);
-
-            // EXI 헤더 수정
-            const modifiedExiData = Buffer.from(exiData);
-            modifiedExiData[2] = modifiedExiData[2] & 0b11111011;
-            console.log(`${colors.fg.cyan}EXI 헤더 수정됨: ${modifiedExiData[2].toString(2).padStart(8, '0')}${colors.reset}`);
-            
-            // 헤더 디버깅 정보 출력
-            console.log(`${colors.fg.cyan}EXI 헤더 분석:${colors.reset}`);
-            if (modifiedExiData.length >= 3) {
-              console.log(`${colors.dim}  - 첫 번째 바이트 (비트맵): ${modifiedExiData[0].toString(2).padStart(8, '0')}${colors.reset}`);
-              console.log(`${colors.dim}  - 두 번째 바이트: ${modifiedExiData[1].toString(16).padStart(2, '0')}${colors.reset}`);
-              console.log(`${colors.dim}  - 세 번째 바이트 (수정됨): ${modifiedExiData[2].toString(16).padStart(2, '0')}${colors.reset}`);
-            }
-            
-            // Base64 변환 및 결과 확인
-            const base64Result = modifiedExiData.toString('base64');
-            console.log(`${colors.fg.green}Base64 result length: ${base64Result.length}${colors.reset}`);
-
-            if (!base64Result || base64Result.trim() === '') {
-                throw new Error('Empty EXI result after encoding');
-            }
-
-            return base64Result;
-            
-        } catch (error) {
-            console.error(`${colors.fg.red}Error in encodeToEXI: ${error.message}${colors.reset}`);
-            throw error;
-        } finally {
-            // 임시 파일이 존재할 경우에만 삭제 시도
-            try {
-                const xmlExists = await fsPromises.access(tempXmlFile)
-                    .then(() => true)
-                    .catch(() => false);
-                    
-                const exiExists = await fsPromises.access(tempExiFile)
-                    .then(() => true)
-                    .catch(() => false);
-
-                if (xmlExists) {
-                    await fsPromises.unlink(tempXmlFile);
-                    console.log(`${colors.dim}Temp XML file deleted${colors.reset}`);
-                }
-                
-                if (exiExists) {
-                    await fsPromises.unlink(tempExiFile);
-                    console.log(`${colors.dim}Temp EXI file deleted${colors.reset}`);
-                }
-            } catch (err) {
-                console.error(`${colors.fg.yellow}Error during cleanup: ${err.message}${colors.reset}`);
-            }
-        }
-    }
-
-    async decodeFromEXI(base64String) {
-        const tempExiFile = path.join(__dirname, 'temp.exi');
-        const tempXmlFile = path.join(__dirname, 'temp.exi.xml');
-        
-        try {
-            const exiData = Buffer.from(base64String, 'base64');
-            await fsPromises.writeFile(tempExiFile, exiData);
-            
-            await this.executeJavaCommand([
-                '-jar', JAR_PATH,
-                '-e',
-                '-f', tempExiFile,
-                '-o', tempXmlFile
-            ]);
-            
-            return await fsPromises.readFile(tempXmlFile, 'utf8');
-            
-        } finally {
-            await fsPromises.unlink(tempExiFile).catch(() => {});
-            await fsPromises.unlink(tempXmlFile).catch(() => {});
-        }
-    }
-
-    executeJavaCommand(args) {
-        return new Promise((resolve, reject) => {
-            const java = spawn('java', args);
-            let output = '';
-            let error = '';
-    
-            console.log(`${colors.dim}Java command: java ${args.join(' ')}${colors.reset}`);
-    
-            java.stdout.on('data', (data) => {
-                const message = data.toString();
-                console.log(`${colors.dim}Java stdout: ${message}${colors.reset}`);
-                output += message;
-            });
-    
-            java.stderr.on('data', (data) => {
-                const message = data.toString();
-                console.error(`${colors.fg.yellow}Java stderr: ${message}${colors.reset}`);
-                error += message;
-            });
-    
-            java.on('error', (err) => {
-                console.error(`${colors.fg.red}Java process error: ${err}${colors.reset}`);
-                reject(err);
-            });
-    
-            java.on('close', (code) => {
-                console.log(`${colors.dim}Java process exit code: ${code}${colors.reset}`);
-                if (code === 0) {
-                    resolve(output);
-                } else {
-                    reject(new Error(`${colors.fg.red}Java execution failed (code: ${code}): ${error}${colors.reset}`));
-                }
-            });
-        });
-    }
-}
+// class EXIConverter { ... } // EXIConverter 클래스 전체 제거
 // --- EXIConverter 클래스 정의 끝 ---
 
 // 인스턴스 생성
-const exiConverter = new EXIConverter();
+// const exiConverter = new EXIConverter(); // EXIConverter 사용 안함
 
 /**
  * 디렉토리 생성 함수 (없을 경우에만 생성)
@@ -193,28 +79,51 @@ function ensureDirectoryExists(dirPath) {
  * ISO15118-20 인증서 요청을 보내는 함수
  * @param {string} action - 액션 타입 ('install' 또는 'update')
  */
-async function sendISO15118_20CertRequest(action = 'install') {
-  // TODO: 서버 URL이 ISO 15118-20용으로 다를 수 있음. 확인 필요.
+async function sendISO15118_20CertRequest() {
+  // 기본값 설정
+  let action = 'install';
+  let xmlFilename = 'certificateInstallationReq_20.xml';
+
+  // 인수 파싱 로직
+  const args = process.argv.slice(2); // 실행 경로와 스크립트 이름 제외
+  for (let i = 0; i < args.length; i++) {
+    if ((args[i] === '-f' || args[i] === '--file') && i + 1 < args.length) {
+      xmlFilename = args[i + 1];
+      i++; // 값까지 건너뛰기
+      console.log(`${colors.dim}  [Arg Parse] 파일명 인수로 설정: ${xmlFilename}${colors.reset}`);
+    } else if (args[i] === '--action' && i + 1 < args.length) {
+      const potentialAction = args[i + 1].toLowerCase();
+      if (potentialAction === 'install' || potentialAction === 'update') {
+          action = potentialAction;
+          console.log(`${colors.dim}  [Arg Parse] 액션 인수로 설정: ${action}${colors.reset}`);
+      } else {
+          console.warn(`${colors.fg.yellow}  [Arg Parse] 경고: 유효하지 않은 액션 값입니다 (${args[i + 1]}). 기본값 'install' 사용.${colors.reset}`);
+      }
+      i++; // 값까지 건너뛰기
+    }
+  }
+
+  console.log(`${colors.fg.blue}최종 설정 - 액션: ${action}, 파일명: ${xmlFilename}${colors.reset}`);
+
   const url = 'http://localhost:7600/api/contract-cert/ISO15118CertReq';
-  const outDir = path.join(__dirname, 'out'); // 출력 디렉토리
+  const outDir = path.join(__dirname, 'out');
   ensureDirectoryExists(outDir);
 
-  // ISO 15118-20 결과 XML 파일 경로
-  const xmlFilePath = path.join(__dirname, 'out', 'certificateInstallationReq_20.xml');
-  // 응답 저장 파일 경로
-  const responseFilePath = path.join(outDir, 'response_20.json');
+  // 최종 XML 파일 경로 설정 (파싱 결과 또는 기본값 사용)
+  const xmlFilePath = path.join(outDir, xmlFilename);
+
+  // 응답 저장 파일 경로 (파일명에 타임스탬프 추가하여 구분 용이하게 변경)
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const responseFilename = `response_20_${xmlFilename.replace('.xml', '')}_${action}_${timestamp}.json`;
+  const responseFilePath = path.join(outDir, responseFilename);
 
   try {
-    // 액션 값 검증
-    if (action !== 'install' && action !== 'update') {
-      console.warn(`${colors.fg.yellow}유효하지 않은 액션입니다. "install" 또는 "update"만 사용 가능합니다. 기본값 "install" 사용.${colors.reset}`);
-      action = 'install';
-    }
+    // 액션 값은 파싱 결과를 사용
+    console.log(`${colors.fg.blue}실행 액션: ${action}${colors.reset}`);
 
     // XML 파일 존재 확인
     if (!fs.existsSync(xmlFilePath)) {
       console.error(`${colors.fg.red}XML 파일이 존재하지 않습니다: ${xmlFilePath}${colors.reset}`);
-      console.log(`먼저 node generateCertRequestXmlInstallVersion20.js 를 실행하여 파일을 생성해주세요.`);
       return; // Exit if file not found
     }
 
@@ -222,32 +131,32 @@ async function sendISO15118_20CertRequest(action = 'install') {
     const xmlContent = await fsPromises.readFile(xmlFilePath, 'utf8');
     console.log(`${colors.dim}XML 내용 읽기 완료 (${xmlFilePath})${colors.reset}`);
 
-    // 작업 폴더에 임시 XML 파일 복사 (디버깅 용도로 보존)
-    const debugXmlPath = path.join(outDir, 'debug_request_20.xml');
+    // 작업 폴더에 임시 XML 파일 복사 (디버깅 용도로 보존, 입력 파일명 기반으로 변경)
+    const debugXmlPath = path.join(outDir, `debug_request_${xmlFilename}`);
     await fsPromises.copyFile(xmlFilePath, debugXmlPath);
     console.log(`${colors.dim}디버깅을 위한 XML 파일 복사본 생성: ${debugXmlPath}${colors.reset}`);
 
-    // XML을 EXI로 인코딩
-    console.log(`${colors.fg.blue}EXI 인코딩 시작...${colors.reset}`);
-    const base64ExiData = await exiConverter.encodeToEXI(xmlContent);
-    console.log(`${colors.fg.green}EXI 인코딩 완료, Base64 데이터 크기: ${base64ExiData.length}${colors.reset}`);
+    // XML을 EXI로 인코딩 // 제거
+    // console.log(`${colors.fg.blue}EXI 인코딩 시작...${colors.reset}`);
+    // const base64ExiData = await exiConverter.encodeToEXI(xmlContent);
+    // console.log(`${colors.fg.green}EXI 인코딩 완료, Base64 데이터 크기: ${base64ExiData.length}${colors.reset}`);
 
-    // EXI 데이터를 파일로 저장 (디버깅용)
-    const exiDebugFile = path.join(outDir, 'debug_exi_data_20.bin');
-    try {
-      const exiDataBuffer = Buffer.from(base64ExiData, 'base64');
-      await fsPromises.writeFile(exiDebugFile, exiDataBuffer);
-      console.log(`${colors.fg.cyan}디버깅용 EXI 데이터가 저장됨: ${exiDebugFile} (${exiDataBuffer.length} 바이트)${colors.reset}`);
-    } catch (error) {
-      console.error(`${colors.fg.red}EXI 데이터 파일 저장 실패: ${error.message}${colors.reset}`);
-    }
+    // EXI 데이터를 파일로 저장 (디버깅용) // 제거
+    // const exiDebugFile = path.join(outDir, 'debug_exi_data_20.bin');
+    // try {
+    //   const exiDataBuffer = Buffer.from(base64ExiData, 'base64');
+    //   await fsPromises.writeFile(exiDebugFile, exiDataBuffer);
+    //   console.log(`${colors.fg.cyan}디버깅용 EXI 데이터가 저장됨: ${exiDebugFile} (${exiDataBuffer.length} 바이트)${colors.reset}`);
+    // } catch (error) {
+    //   console.error(`${colors.fg.red}EXI 데이터 파일 저장 실패: ${error.message}${colors.reset}`);
+    // }
 
     // 서버 요청용 데이터를 파일로도 저장 (확인용)
     const requestDataFile = path.join(outDir, 'request_data_20.json');
     const requestData = {
-      iso15118SchemaVersion: 'urn:iso:std:iso:15118:-20:CommonMessages',
-      action: action,
-      exiRequest: base64ExiData
+      iso15118SchemaVersion: 'urn:iso:std:iso:15118:-20:CommonMessages', // 스키마 버전은 유지 (서버에서 필요할 수 있음)
+      action: action, // 파싱된 액션 사용
+      xmlRequest: xmlContent // 원본 XML 내용 추가 (서버 측 수신 필드명 확인 필요)
     };
     
     try {
@@ -294,10 +203,7 @@ async function sendISO15118_20CertRequest(action = 'install') {
   }
 }
 
-// 함수 실행 (인자로 'install' 또는 'update' 전달 가능)
-const actionArg = process.argv[2] === 'update' ? 'update' : 'install';
-console.log(`${colors.fg.blue}실행 액션: ${actionArg}${colors.reset}`);
-
+// 함수 실행 (인수 처리는 함수 내부에서 수행)
 (async () => {
     try {
         // node-fetch 존재 확인 (선택적)
@@ -308,7 +214,8 @@ console.log(`${colors.fg.blue}실행 액션: ${actionArg}${colors.reset}`);
         process.exit(1);
     }
     try {
-        const result = await sendISO15118_20CertRequest(actionArg);
+        // sendISO15118_20CertRequest 함수는 이제 인수를 받지 않음
+        const result = await sendISO15118_20CertRequest();
         if (result) {
             console.log(`${colors.fg.green}요청 처리 성공적으로 완료!${colors.reset}`);
         } else {

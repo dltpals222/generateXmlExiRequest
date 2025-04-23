@@ -1,3 +1,47 @@
+/**
+ * ISO 15118-20 (-20) 표준에 따른 CertificateInstallationReq 메시지 XML 파일을 생성하는 스크립트입니다.
+ * 이 스크립트는 지정된 OEM 프로비저닝 인증서와 개인 키를 사용하여 XML 서명(XMLDSig)을 계산하고,
+ * 루트 인증서 정보를 포함하여 최종 XML 파일을 생성합니다.
+ * 서명 계산 과정에서 Canonical EXI 변환과 EXI 인코딩을 사용합니다.
+ *
+ * [실행 방법]
+ * node generateCertRequestXmlInstallVersion20.js [출력_파일명]
+ *
+ * [인수]
+ * 출력_파일명 (선택 사항):
+ *   설명: 생성될 XML 파일의 이름을 지정합니다. 확장자(.xml)를 포함하여 입력합니다.
+ *   기본값: 스크립트 내 `DEFAULT_OUTPUT_FILENAME` 상수에 정의된 값 ('certificateInstallationReq_20.xml')
+ *
+ * [결과물]
+ * - 지정된 이름 또는 기본 이름의 XML 파일 1개
+ * - 파일 내용: ISO 15118-20 스키마에 따른 CertificateInstallationReq 메시지.
+ *             요청 헤더, XML 서명, OEM 프로비저닝 인증서 체인, 루트 인증서 목록 등이 포함됩니다.
+ *
+ * [출력 디렉토리]
+ * - 스크립트 내 `OUT_DIR_NAME` 상수에 정의된 이름의 폴더 ('out')
+ * - 해당 폴더가 없으면 자동으로 생성됩니다.
+ *
+ * [실행 예시]
+ * 1. 기본 파일명으로 생성:
+ *    node generateCertRequestXmlInstallVersion20.js
+ *
+ * 2. 사용자 정의 파일명(my_cert_install_req.xml)으로 생성:
+ *    node generateCertRequestXmlInstallVersion20.js my_cert_install_req.xml
+ *
+ * [사전 요구 사항]
+ * 1. Node.js 및 npm 설치
+ * 2. 필수 라이브러리 설치: `npm install xmlbuilder2`
+ * 3. OpenSSL 설치 및 PATH 환경 변수에 등록
+ * 4. Java Development Kit (JDK) 설치 및 PATH 환경 변수에 등록
+ * 5. EXI 변환기 JAR 파일: 스크립트와 동일한 디렉토리에 `JAR_FILENAME` 상수에 정의된 이름('V2Gdecoder.jar')의 파일 필요
+ * 6. 필요한 인증서, 키, 스키마 및 기타 파일 (스크립트 내 상수 정의 확인):
+ *    - OEM 프로비저닝 인증서: `./${CERT_DIR_NAME}/${OEM_CERT_FILENAME}`
+ *    - 개인 키: `./${KEY_DIR_NAME}/${PRIVATE_KEY_FILENAME}`
+ *    - 루트 인증서: `./${ROOT_CERTS_DIR_NAME}/` 디렉토리 내 .pem, .crt, .cer 파일들
+ *    - 공통 메시지 스키마: `./${SCHEMA_DIR_NAME}/${COMMON_MESSAGES_SCHEMA_FILENAME}`
+ *    - XML 서명 스키마: `./${SCHEMA_DIR_NAME}/${XMLDSIG_SCHEMA_FILENAME}`
+ *    - (선택) EMAID 리스트: `./${EMAID_DIR_NAME}/${EMAID_LIST_FILENAME}` (없으면 관련 요소 생략됨)
+ */
 const fs = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
@@ -5,7 +49,7 @@ const { create } = require('xmlbuilder2');
 const util = require('util');
 const { exec: execCb, spawn } = require('child_process');
 
-// ANSI 색상 코드 정의
+// ANSI 색상 코드 정의 (다른 상수 정의보다 먼저 와야 함)
 const colors = {
     reset: "\x1b[0m",
     bright: "\x1b[1m",
@@ -39,19 +83,46 @@ const colors = {
     }
 };
 
+// --- Constants --- Defines default names, directories, and identifiers used throughout the script.
+// --- Directory Names ---
+const CERT_DIR_NAME = 'cert';         // Directory containing the OEM provisioning certificate.
+const KEY_DIR_NAME = 'key';          // Directory containing the private key.
+const ROOT_CERTS_DIR_NAME = 'root';      // Directory containing trusted root certificates.
+const OUT_DIR_NAME = 'out';         // Directory where the generated XML file will be saved.
+const SCHEMA_DIR_NAME = 'xmlSchema';   // Directory containing XML schema files.
+const EMAID_DIR_NAME = 'emaid';       // Directory containing the EMAID list file.
+
+// --- File Names ---
+const DEFAULT_OUTPUT_FILENAME = 'certificateInstallationReq_20.xml'; // Default name for the output XML file.
+const OEM_CERT_FILENAME = 'target_oem_prov_cert_20.pem';           // Filename of the OEM provisioning certificate.
+const PRIVATE_KEY_FILENAME = 'target_private_20.key.pem';         // Filename of the private key corresponding to the OEM certificate.
+const JAR_FILENAME = 'V2Gdecoder.jar';                             // Filename of the EXI converter JAR file.
+const COMMON_MESSAGES_SCHEMA_FILENAME = 'V2G_CI_CommonMessages.xsd'; // Filename for the V2G CommonMessages schema.
+const XMLDSIG_SCHEMA_FILENAME = 'xmldsig-core-schema.xsd';         // Filename for the XML Digital Signature schema.
+const EMAID_LIST_FILENAME = 'prioritized_emaids.json';             // Filename for the list of prioritized EMAIDs.
+
+// --- XML Identifiers and Values ---
+const DEFAULT_ELEMENT_TO_DIGEST_ID = "CertChain001"; // Default XML ID for the OEMProvisioningCertificateChain element (target of the signature).
+const DEFAULT_MAX_CHAINS = '2';                     // Default value for the MaximumContractCertificateChains element.
+
+// --- Path Construction --- Build full paths based on the constants defined above.
+const OUT_DIR = path.join(__dirname, OUT_DIR_NAME);
+const OEM_PROV_CERT_PATH = path.join(__dirname, CERT_DIR_NAME, OEM_CERT_FILENAME);
+const PRIVATE_KEY_PATH = path.join(__dirname, KEY_DIR_NAME, PRIVATE_KEY_FILENAME);
+const ROOT_CERTS_DIR = path.join(__dirname, ROOT_CERTS_DIR_NAME);
+const JAR_PATH = path.join(__dirname, JAR_FILENAME);
+const SCHEMA_PATH = path.join(__dirname, SCHEMA_DIR_NAME, COMMON_MESSAGES_SCHEMA_FILENAME);
+const XMLDSIG_SCHEMA_PATH = path.join(__dirname, SCHEMA_DIR_NAME, XMLDSIG_SCHEMA_FILENAME);
+const EMAID_LIST_PATH = path.join(__dirname, EMAID_DIR_NAME, EMAID_LIST_FILENAME);
+
+// --- Dynamic Output Path --- Determine the final output path based on command-line arguments or the default.
+const outputFilenameArg = process.argv[2];
+const targetFilename = outputFilenameArg || DEFAULT_OUTPUT_FILENAME;
+const OUTPUT_XML_PATH = path.join(OUT_DIR, targetFilename);
+console.log(`${colors.dim}  [Config] 최종 출력 파일 경로: ${OUTPUT_XML_PATH}${colors.reset}`);
+
 // exec를 Promise 기반으로 변환
 const exec = util.promisify(execCb);
-
-// --- 설정 값 ---
-const OUT_DIR = path.join(__dirname, 'out'); // 출력 폴더
-const OUTPUT_XML_PATH = path.join(OUT_DIR, 'certificateInstallationReq_20.xml'); // 생성될 XML 파일 경로
-const OEM_PROV_CERT_PATH = path.join(__dirname, 'cert', 'oem_prov_cert_20.pem'); // OEM 인증서 경로 (-20 버전)
-const PRIVATE_KEY_PATH = path.join(__dirname, 'key', 'private_20.key.pem'); // 개인 키 경로 (-20 버전)
-const ROOT_CERTS_DIR = path.join(__dirname, 'root'); // 루트 인증서 폴더 경로
-const JAR_PATH = path.join(__dirname, 'V2Gdecoder.jar'); // JAR 경로 수정 (상대 경로)
-const SCHEMA_PATH = path.join(__dirname, 'xmlSchema', 'V2G_CI_CommonMessages.xsd'); // 스키마 경로 추가
-const XMLDSIG_SCHEMA_PATH = path.join(__dirname, 'xmlSchema', 'xmldsig-core-schema.xsd'); // XML Signature 스키마 경로 추가
-const EMAID_LIST_PATH = path.join(__dirname, 'emaid', 'prioritized_emaids.json'); // EMAID 리스트 파일 경로 추가
 
 // --- 네임스페이스 정의 (ISO 15118-20 CommonMessages 기준) ---
 const NAMESPACES = {
@@ -339,7 +410,7 @@ async function generateCertificateInstallationReqXmlV20() {
         // 서명 계산을 위해 먼저 서명될 요소를 포함한 임시 XML 구조를 만듭니다.
         // 실제 최종 XML은 나중에 생성합니다.
         const tempRootForDigest = create({ version: '1.0', encoding: 'UTF-8' });
-        const elementToDigestId = "CertChain001"; // 서명 대상 요소의 ID
+        const elementToDigestId = DEFAULT_ELEMENT_TO_DIGEST_ID; // Use constant ID
 
         // OEMProvisioningCertificateChain 요소를 임시 구조에 추가 (ID 포함)
         const oemProvCertChainNode = tempRootForDigest.ele(NAMESPACES.ns, 'OEMProvisioningCertificateChain', { Id: elementToDigestId });
@@ -397,7 +468,7 @@ ${oemProvCertChainXmlString}${colors.reset}`);
             // SignatureMethod 추가 (동적 결정된 값)
             signedInfoBuilder.ele(NAMESPACES.ds, 'SignatureMethod', { Algorithm: signingAlgorithms.signatureMethod });
             // Reference 추가
-            const referenceBuilder = signedInfoBuilder.ele(NAMESPACES.ds, 'Reference', { URI: `#${elementToDigestId}` });
+            const referenceBuilder = signedInfoBuilder.ele(NAMESPACES.ds, 'Reference', { URI: `#${DEFAULT_ELEMENT_TO_DIGEST_ID}` });
             referenceBuilder.ele(NAMESPACES.ds, 'Transforms')
                 .ele(NAMESPACES.ds, 'Transform', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
             referenceBuilder.ele(NAMESPACES.ds, 'DigestMethod', { Algorithm: signingAlgorithms.digestMethod });
@@ -483,7 +554,7 @@ ${signedInfoXmlString}${colors.reset}`);
         // [V2G20-2473] SignatureMethod Algorithm 수정 (ecdsa-sha512)
         signedInfo.ele(NAMESPACES.ds, 'SignatureMethod', { Algorithm: signingAlgorithms.signatureMethod });
 
-        const reference = signedInfo.ele(NAMESPACES.ds, 'Reference', { URI: `#${elementToDigestId}` }); // 위에서 정의한 ID 참조
+        const reference = signedInfo.ele(NAMESPACES.ds, 'Reference', { URI: `#${DEFAULT_ELEMENT_TO_DIGEST_ID}` }); // Use constant ID
         const transforms = reference.ele(NAMESPACES.ds, 'Transforms');
         // [V2G20-766] Transform Algorithm 수정, [V2G20-767] Transform은 하나만
         transforms.ele(NAMESPACES.ds, 'Transform', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
@@ -494,7 +565,7 @@ ${signedInfoXmlString}${colors.reset}`);
         signature.ele(NAMESPACES.ds, 'SignatureValue').txt(calculatedSignatureValue); // 계산된 값 사용 (현재 Placeholder)
 
         // OEMProvisioningCertificateChain (Id 추가하여 서명 대상 식별)
-        const finalOemProvCertChain = root.ele(NAMESPACES.ns, 'OEMProvisioningCertificateChain', { Id: elementToDigestId });
+        const finalOemProvCertChain = root.ele(NAMESPACES.ns, 'OEMProvisioningCertificateChain', { Id: DEFAULT_ELEMENT_TO_DIGEST_ID }); // Use constant ID
         finalOemProvCertChain.ele(NAMESPACES.ns, 'Certificate').txt(oemCertBase64);
         // SubCertificates는 예제에 없으므로 생략. 필요시 PEM 파일 파싱하여 추가 필요.
         // const subCerts = oemProvCertChain.ele(NAMESPACES.ns, 'SubCertificates');
@@ -513,7 +584,7 @@ ${signedInfoXmlString}${colors.reset}`);
         });
 
         // MaximumContractCertificateChains
-        root.ele(NAMESPACES.ns, 'MaximumContractCertificateChains').txt('2'); // 예제 값 사용
+        root.ele(NAMESPACES.ns, 'MaximumContractCertificateChains').txt(DEFAULT_MAX_CHAINS); // Use constant value
 
         // PrioritizedEMAIDs (동적 생성)
         if (prioritizedEMAIDsList.length > 0) {
@@ -583,14 +654,14 @@ function createErrorXmlV20(sessionId, oemCertBase64, rootCertInfos, digestValue,
     // 알고리즘 적용
     signedInfo.ele(NAMESPACES.ds, 'CanonicalizationMethod', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
     signedInfo.ele(NAMESPACES.ds, 'SignatureMethod', { Algorithm: algorithms.signatureMethod });
-    const reference = signedInfo.ele(NAMESPACES.ds, 'Reference', { URI: '#CertChain001' });
+    const reference = signedInfo.ele(NAMESPACES.ds, 'Reference', { URI: `#${DEFAULT_ELEMENT_TO_DIGEST_ID}` });
     reference.ele(NAMESPACES.ds, 'Transforms').ele(NAMESPACES.ds, 'Transform', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
     reference.ele(NAMESPACES.ds, 'DigestMethod', { Algorithm: algorithms.digestMethod });
     reference.ele(NAMESPACES.ds, 'DigestValue').txt(digestValue); // ERROR_DIGEST_VALUE
     signature.ele(NAMESPACES.ds, 'SignatureValue').txt(signatureValue); // ERROR_SIGNATURE_VALUE
     // KeyInfo 제거됨
     // Body (Error Placeholder)
-    const oemProvCertChain = root.ele(NAMESPACES.ns, 'OEMProvisioningCertificateChain', { Id: 'CertChain001' });
+    const oemProvCertChain = root.ele(NAMESPACES.ns, 'OEMProvisioningCertificateChain', { Id: DEFAULT_ELEMENT_TO_DIGEST_ID }); // Use constant ID
     oemProvCertChain.ele(NAMESPACES.ns, 'Certificate').txt(oemCertBase64 || 'ERROR_OEM_CERT');
     const listOfRoots = root.ele(NAMESPACES.ns, 'ListOfRootCertificateIDs');
     if (rootCertInfos && rootCertInfos.length > 0) {
@@ -603,7 +674,7 @@ function createErrorXmlV20(sessionId, oemCertBase64, rootCertInfos, digestValue,
     } else {
          listOfRoots.txt("<!-- 루트 인증서 정보 로드 실패 -->");
     }
-    root.ele(NAMESPACES.ns, 'MaximumContractCertificateChains').txt('2');
+    root.ele(NAMESPACES.ns, 'MaximumContractCertificateChains').txt(DEFAULT_MAX_CHAINS); // Use constant value
     // 오류 시에는 PrioritizedEMAIDs 생략 또는 기본값 사용 결정 필요
     // 여기서는 생략하는 것으로 유지
 
