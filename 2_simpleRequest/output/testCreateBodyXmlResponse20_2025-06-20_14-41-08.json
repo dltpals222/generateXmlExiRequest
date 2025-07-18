@@ -1,0 +1,92 @@
+{
+  "timestamp": "2025-06-20T05:41:08.877Z",
+  "endpoint": "testCreateBodyXmlResponse20",
+  "url": "http://localhost:7600/api/contract-cert/testCreateBodyXmlResponse20",
+  "statusCode": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "access-control-allow-origin": "*",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "1682",
+    "etag": "W/\"692-DSNTTYlnnKxNI5NJFgFGlaOuI0k\"",
+    "date": "Fri, 20 Jun 2025 05:41:08 GMT",
+    "connection": "keep-alive",
+    "keep-alive": "timeout=5"
+  },
+  "responseData": {
+    "message": "createBodyXmlResponse_20 함수 테스트 완료",
+    "results": {
+      "testCases": [
+        {
+          "name": "Valid OK Response with SECP521",
+          "status": "PASSED",
+          "responseCode": "OK",
+          "bodyType": "SUCCESS_BODY",
+          "evseProcessing": "Finished",
+          "remainingChains": "3",
+          "hasSignedInstallationData": true,
+          "message": "ISO 15118-20 body structure created successfully"
+        },
+        {
+          "name": "Valid OK Response with X448",
+          "status": "PASSED",
+          "responseCode": "OK",
+          "bodyType": "SUCCESS_BODY",
+          "evseProcessing": "Finished",
+          "remainingChains": "3",
+          "hasSignedInstallationData": true,
+          "message": "ISO 15118-20 body structure created successfully"
+        },
+        {
+          "name": "Valid WARNING Response",
+          "status": "PASSED",
+          "responseCode": "WARNING_CertificateExpired",
+          "bodyType": "SUCCESS_BODY",
+          "evseProcessing": "Ongoing",
+          "remainingChains": "3",
+          "hasSignedInstallationData": true,
+          "message": "ISO 15118-20 body structure created successfully"
+        },
+        {
+          "name": "Valid FAILED Response",
+          "status": "PASSED",
+          "responseCode": "FAILED_SignatureError",
+          "bodyType": "FAILED_BODY",
+          "evseProcessing": "N/A",
+          "remainingChains": "N/A",
+          "hasSignedInstallationData": false,
+          "message": "FAILED response body XML structure created"
+        },
+        {
+          "name": "Invalid: Missing CPS Certificate",
+          "status": "FAILED",
+          "error": "Expected failure but function succeeded",
+          "actualSuccess": false
+        },
+        {
+          "name": "Invalid: Invalid ResponseCode",
+          "status": "FAILED",
+          "error": "Expected failure but function succeeded",
+          "actualSuccess": false
+        },
+        {
+          "name": "Invalid: Invalid EVSEProcessing",
+          "status": "FAILED",
+          "error": "Expected failure but function succeeded",
+          "actualSuccess": false
+        },
+        {
+          "name": "Invalid: RemainingChains out of range",
+          "status": "FAILED",
+          "error": "Expected failure but function succeeded",
+          "actualSuccess": false
+        }
+      ],
+      "summary": {
+        "total": 8,
+        "passed": 4,
+        "failed": 4
+      }
+    }
+  }
+}

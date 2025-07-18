@@ -156,7 +156,7 @@ async function sendISO15118_20CertRequest() {
     const requestData = {
       iso15118SchemaVersion: 'urn:iso:std:iso:15118:-20:CommonMessages', // 스키마 버전은 유지 (서버에서 필요할 수 있음)
       action: action, // 파싱된 액션 사용
-      xmlRequest: xmlContent // 원본 XML 내용 추가 (서버 측 수신 필드명 확인 필요)
+      exiRequest: xmlContent // 필드 이름 변경 (xmlRequest -> exiRequest), 값은 여전히 원본 XML
     };
     
     try {

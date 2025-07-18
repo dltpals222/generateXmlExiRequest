@@ -96,6 +96,11 @@ const EMAID_DIR_NAME = 'emaid';       // Directory containing the EMAID list fil
 const DEFAULT_OUTPUT_FILENAME = 'certificateInstallationReq_20.xml'; // Default name for the output XML file.
 const OEM_CERT_FILENAME = 'target_oem_prov_cert_20.pem';           // Filename of the OEM provisioning certificate.
 const PRIVATE_KEY_FILENAME = 'target_private_20.key.pem';         // Filename of the private key corresponding to the OEM certificate.
+// 서브 인증서 파일 이름 정의 (비어있으면 사용하지 않음)
+const OEM_SUB_CERT_FILENAMES = [
+    'sub_cert1.pem', // 첫번째 서브 인증서 (예: 중간 CA 인증서)
+    // 'sub_cert2.pem'  // 두번째 서브 인증서 (예: 상위 중간 CA 인증서)
+];                     // 최대 3개까지 가능 (스키마 확인 필요)
 const JAR_FILENAME = 'V2Gdecoder.jar';                             // Filename of the EXI converter JAR file.
 const COMMON_MESSAGES_SCHEMA_FILENAME = 'V2G_CI_CommonMessages.xsd'; // Filename for the V2G CommonMessages schema.
 const XMLDSIG_SCHEMA_FILENAME = 'xmldsig-core-schema.xsd';         // Filename for the XML Digital Signature schema.
@@ -103,7 +108,7 @@ const EMAID_LIST_FILENAME = 'prioritized_emaids.json';             // Filename f
 
 // --- XML Identifiers and Values ---
 const DEFAULT_ELEMENT_TO_DIGEST_ID = "CertChain001"; // Default XML ID for the OEMProvisioningCertificateChain element (target of the signature).
-const DEFAULT_MAX_CHAINS = '2';                     // Default value for the MaximumContractCertificateChains element.
+const DEFAULT_MAX_CHAINS = '3';                     // Default value for the MaximumContractCertificateChains element.
 
 // --- Path Construction --- Build full paths based on the constants defined above.
 const OUT_DIR = path.join(__dirname, OUT_DIR_NAME);
@@ -128,7 +133,7 @@ const exec = util.promisify(execCb);
 const NAMESPACES = {
     ns: 'urn:iso:std:iso:15118:-20:CommonMessages', // Default namespace
     ct: 'urn:iso:std:iso:15118:-20:CommonTypes',
-    ds: 'http://www.w3.org/2000/09/xmldsig#',
+    xmlsig: 'http://www.w3.org/2000/09/xmldsig#', // XML Signature namespace
     xsi: 'http://www.w3.org/2001/XMLSchema-instance'
     // xmlsig 네임스페이스는 RootCertificateID 내부에서 사용되므로, 필요시 동적으로 추가하거나 확인 필요
 };
@@ -221,20 +226,18 @@ const exiConverter = new EXIConverter(); // 인스턴스 생성
 
 // --- 인증서 분석 및 알고리즘 결정 함수 ---
 async function getAlgorithmsFromCert(certPath) {
-    console.log(`${colors.fg.magenta}[+] 인증서 분석 시작: ${certPath}${colors.reset}`);
-    try {
-        const command = `openssl x509 -in "${certPath}" -noout -text | cat`; // | cat 추가
-        console.log(`${colors.dim}  Executing: ${command}${colors.reset}`);
-        const { stdout } = await exec(command);
+    let publicKeyAlgorithm = null;
+    let curveName = null;
+    let keySize = null;
 
-        let publicKeyAlgorithm = null;
-        let curveName = null; // For EC keys
-        let keySize = null; // For EdDSA keys
+    try {
+        const { stdout } = await exec(`openssl x509 -in "${certPath}" -noout -text | cat`);
+        console.log(`${colors.dim}  [Cert Analysis] 인증서 정보 분석 중...${colors.reset}`);
 
         // 공개 키 알고리즘 추출
-        const pkAlgoMatch = stdout.match(/Public Key Algorithm:\s*(\S+)/);
+        const pkAlgoMatch = stdout.match(/Public Key Algorithm:\s*([^\n]+)/);
         if (pkAlgoMatch && pkAlgoMatch[1]) {
-            publicKeyAlgorithm = pkAlgoMatch[1];
+            publicKeyAlgorithm = pkAlgoMatch[1].trim();
             console.log(`${colors.dim}  Public Key Algorithm: ${publicKeyAlgorithm}${colors.reset}`);
 
             // EC 키인 경우 커브 이름 또는 비트 크기 추출 시도
@@ -252,21 +255,12 @@ async function getAlgorithmsFromCert(certPath) {
                     }
                 }
             } 
-            // EdDSA 키인 경우 비트 크기 추출 시도 (예: Ed448)
-            // EdDSA 키의 openssl 출력 형식 확인 필요 (알고리즘 이름으로 판별 가능할 수 있음)
-             else if (publicKeyAlgorithm.includes('Ed448') || publicKeyAlgorithm.toLowerCase().includes('edwards-curve')) {
-                const pkSizeMatch = stdout.match(/Public-Key:\s*\((\d+)\s*bit\)/);
-                if (pkSizeMatch && pkSizeMatch[1]) {
-                    keySize = parseInt(pkSizeMatch[1], 10);
-                     console.log(`${colors.dim}  EdDSA Public-Key Size: ${keySize} bit${colors.reset}`);
-                     // Ed448인지 확인
-                    if (keySize === 448 || publicKeyAlgorithm.includes('Ed448')) {
-                         // 명시적으로 Ed448로 간주
-                         console.log(`${colors.dim}  Detected Ed448 key type.${colors.reset}`);
-                    } else {
-                         console.warn(`${colors.fg.yellow}  Detected EdDSA key but not confirmed as Ed448.${colors.reset}`);
-                    }
-                }
+            // EdDSA 키인 경우 (Ed448)
+            else if (publicKeyAlgorithm === 'ED448' || publicKeyAlgorithm.includes('Ed448')) {
+                keySize = 448; // Ed448는 항상 448비트
+                curveName = 'Ed448';
+                console.log(`${colors.dim}  EdDSA Public-Key Size: ${keySize} bit${colors.reset}`);
+                console.log(`${colors.dim}  Detected Ed448 key type.${colors.reset}`);
             }
         }
 
@@ -285,13 +279,13 @@ async function getAlgorithmsFromCert(certPath) {
             };
         }
         // Ed448 키 ([V2G20-2319] 해당) -> Ed448-SHAKE256 사용
-        else if ((publicKeyAlgorithm.includes('Ed448') || keySize === 448) && (publicKeyAlgorithm.includes('EdDSA') || publicKeyAlgorithm.toLowerCase().includes('edwards-curve')) ) {
-             console.log(`${colors.fg.green}  알고리즘 결정: Ed448-SHAKE256 (Ed448)${colors.reset}`);
-             return {
+        else if (publicKeyAlgorithm === 'ED448' || publicKeyAlgorithm.includes('Ed448')) {
+            console.log(`${colors.fg.green}  알고리즘 결정: Ed448-SHAKE256 (Ed448)${colors.reset}`);
+            return {
                 signatureMethod: 'urn:iso:std:iso:15118:-20:Security:xmldsig#Ed448',   // [V2G20-2474]
                 digestMethod: 'urn:iso:std:iso:15118:-20:Security:xmlenc#SHAKE256', // [V2G20-2476]
                 hashAlgo: 'shake256' // DigestValue 계산용
-             };
+            };
         }
         // 기타 지원하지 않는 키
         else {
@@ -299,8 +293,29 @@ async function getAlgorithmsFromCert(certPath) {
         }
 
     } catch (error) {
-        console.error(`${colors.fg.red}[!] 인증서 분석 중 오류 발생: ${certPath}${colors.reset}`, error);
-        throw error; // 분석 실패 시 상위로 오류 전파
+        console.error(`${colors.fg.red}  [!] 인증서 분석 중 오류 발생: ${certPath}${colors.reset}`, error);
+        throw error;
+    }
+}
+
+/**
+ * PEM 형식 인증서 파일을 읽고 Base64 인코딩된 문자열로 변환합니다.
+ * @param {string} certPath - 인증서 파일 경로
+ * @returns {Promise<string>} Base64 인코딩된 인증서 내용
+ */
+async function readCertificateAsBase64(certPath) {
+    try {
+        console.log(`${colors.dim}  인증서 파일 읽기: ${certPath}${colors.reset}`);
+        const certPem = await fs.readFile(certPath, 'utf8');
+        // PEM 헤더/푸터 제거 및 공백/줄바꿈 제거
+        const base64Cert = certPem.replace(/-----BEGIN CERTIFICATE-----|-----END CERTIFICATE-----|\r?\n|\s/g, '');
+        if (!base64Cert) {
+            throw new Error(`인증서 내용을 추출할 수 없습니다: ${certPath}`);
+        }
+        return base64Cert;
+    } catch (err) {
+        console.error(`${colors.fg.red}  인증서 파일 읽기 실패: ${certPath}${colors.reset}`, err);
+        throw err;
     }
 }
 
@@ -310,6 +325,7 @@ async function generateCertificateInstallationReqXmlV20() {
     let calculatedSignatureValue = 'PLACEHOLDER_SIGNATURE_VALUE';
     let sessionId = 'PLACEHOLDER_SESSION_ID';
     let oemCertBase64 = 'PLACEHOLDER_OEM_CERT';
+    let oemSubCertsBase64 = []; // 서브 인증서 Base64 데이터 저장 배열
     let rootCertInfos = [];
     let signingAlgorithms = null; // 서명 알고리즘 저장 변수
     let prioritizedEMAIDsList = []; // EMAID 리스트 저장 변수
@@ -324,12 +340,32 @@ async function generateCertificateInstallationReqXmlV20() {
 
         // OEM 인증서 로드 (Base64)
         try {
-            const oemCertPem = await fs.readFile(OEM_PROV_CERT_PATH, 'utf8');
-            oemCertBase64 = oemCertPem.replace(/-----BEGIN CERTIFICATE-----|-----END CERTIFICATE-----|\r?\n|\s/g, '');
-            if (!oemCertBase64) throw new Error('OEM 인증서 내용을 읽을 수 없습니다.');
+            // readCertificateAsBase64 함수 사용으로 변경
+            oemCertBase64 = await readCertificateAsBase64(OEM_PROV_CERT_PATH);
             console.log(`${colors.dim}  OEM 인증서 로드 완료: ${OEM_PROV_CERT_PATH}${colors.reset}`);
 
-            // 인증서 분석하여 알고리즘 결정
+            // 서브 인증서 로드 (있는 경우)
+            if (OEM_SUB_CERT_FILENAMES.length > 0) {
+                console.log(`${colors.dim}  서브 인증서 로드 시작 (${OEM_SUB_CERT_FILENAMES.length}개)${colors.reset}`);
+                
+                for (const subCertFilename of OEM_SUB_CERT_FILENAMES) {
+                    const subCertPath = path.join(__dirname, CERT_DIR_NAME, subCertFilename);
+                    try {
+                        const subCertBase64 = await readCertificateAsBase64(subCertPath);
+                        oemSubCertsBase64.push(subCertBase64);
+                        console.log(`${colors.dim}  서브 인증서 로드 완료: ${subCertPath}${colors.reset}`);
+                    } catch (subCertErr) {
+                        console.warn(`${colors.fg.yellow}  경고: 서브 인증서 로드 실패 (${subCertFilename}), 계속 진행합니다.${colors.reset}`);
+                        // 서브 인증서 실패는 치명적이지 않으므로 계속 진행
+                    }
+                }
+                
+                console.log(`${colors.dim}  총 ${oemSubCertsBase64.length}개의 서브 인증서가 로드됨${colors.reset}`);
+            } else {
+                console.log(`${colors.dim}  서브 인증서 파일이 지정되지 않아 SubCertificates 요소는 생성되지 않습니다.${colors.reset}`);
+            }
+
+            // 인증서 분석하여 알고리즘 결정 (메인 인증서 기준)
             signingAlgorithms = await getAlgorithmsFromCert(OEM_PROV_CERT_PATH);
             if (!signingAlgorithms) {
                 // getAlgorithmsFromCert 내부에서 오류 throw 하므로 여기까지 오지 않음
@@ -415,8 +451,15 @@ async function generateCertificateInstallationReqXmlV20() {
         // OEMProvisioningCertificateChain 요소를 임시 구조에 추가 (ID 포함)
         const oemProvCertChainNode = tempRootForDigest.ele(NAMESPACES.ns, 'OEMProvisioningCertificateChain', { Id: elementToDigestId });
         oemProvCertChainNode.ele(NAMESPACES.ns, 'Certificate').txt(oemCertBase64);
-        // 실제 사용 시 SubCertificates도 포함해야 할 수 있음
-
+        
+        // 서브 인증서가 있으면 SubCertificates 요소 추가 (서명 대상에 포함)
+        if (oemSubCertsBase64.length > 0) {
+            const subCertsNode = oemProvCertChainNode.ele(NAMESPACES.ns, 'SubCertificates');
+            oemSubCertsBase64.forEach(subCertBase64 => {
+                subCertsNode.ele(NAMESPACES.ns, 'Certificate').txt(subCertBase64);
+            });
+        }
+        
         // 서명 대상 요소의 XML 문자열 추출 (네임스페이스 포함, prettyPrint 없이)
         // xmlbuilder2는 부모의 네임스페이스를 자동으로 상속하지 않으므로,
         // 필요한 네임스페이스를 fragment 자체에 선언해야 할 수 있습니다.
@@ -454,76 +497,83 @@ ${oemProvCertChainXmlString}${colors.reset}`);
             calculatedDigestValue = 'ERROR_DIGEST_VALUE';
         }
 
-        // --- 3. SignatureValue 계산 --- 
+        // --- 3. SignatureValue 계산 ---
         console.log(`${colors.fg.blue}[3/7] SignatureValue 계산 시작 (Using ${signingAlgorithms.signatureMethod})...${colors.reset}`);
         try {
-            // 1. <ds:SignedInfo> XML 문자열 생성
-            console.log('  1. Generating <ds:SignedInfo> XML fragment...');
-            const signedInfoBuilder = create({ version: '1.0', encoding: 'UTF-8' })
-                // ds 네임스페이스를 명시적으로 선언해야 EXI 인코딩 시 인식 가능
-                .ele(NAMESPACES.ds, 'SignedInfo', { 'xmlns:ds': NAMESPACES.ds }); 
+            // 1. <xmlsig:SignedInfo> XML 프래그먼트 생성
+            console.log('  1. Generating <xmlsig:SignedInfo> XML fragment...');
+            const signedInfoXml = create({ version: '1.0', encoding: 'UTF-8' })
+                .ele(NAMESPACES.xmlsig, 'SignedInfo')
+                .ele(NAMESPACES.xmlsig, 'CanonicalizationMethod', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' })
+                .up()
+                .ele(NAMESPACES.xmlsig, 'SignatureMethod', { Algorithm: signingAlgorithms.signatureMethod })
+                .up()
+                .ele(NAMESPACES.xmlsig, 'Reference', { URI: `#${elementToDigestId}` })
+                .ele(NAMESPACES.xmlsig, 'DigestMethod', { Algorithm: signingAlgorithms.digestMethod })
+                .up()
+                .ele(NAMESPACES.xmlsig, 'DigestValue')
+                .txt(calculatedDigestValue);
 
-            // CanonicalizationMethod 추가
-            signedInfoBuilder.ele(NAMESPACES.ds, 'CanonicalizationMethod', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
-            // SignatureMethod 추가 (동적 결정된 값)
-            signedInfoBuilder.ele(NAMESPACES.ds, 'SignatureMethod', { Algorithm: signingAlgorithms.signatureMethod });
-            // Reference 추가
-            const referenceBuilder = signedInfoBuilder.ele(NAMESPACES.ds, 'Reference', { URI: `#${DEFAULT_ELEMENT_TO_DIGEST_ID}` });
-            referenceBuilder.ele(NAMESPACES.ds, 'Transforms')
-                .ele(NAMESPACES.ds, 'Transform', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
-            referenceBuilder.ele(NAMESPACES.ds, 'DigestMethod', { Algorithm: signingAlgorithms.digestMethod });
-            referenceBuilder.ele(NAMESPACES.ds, 'DigestValue').txt(calculatedDigestValue); // 계산된 DigestValue 사용
+            const signedInfoXmlString = signedInfoXml.toString({ prettyPrint: false });
+            console.log(`[Debug] XML Fragment for Signature:\n${signedInfoXmlString}`);
 
-            // SignedInfo XML 문자열 추출 (prettyPrint 없이)
-            // 루트 요소(SignedInfo) 자체의 문자열 얻기
-            const signedInfoXmlString = signedInfoBuilder.root().first().toString({ prettyPrint: false }); 
-            console.log(`${colors.dim}[Debug] XML Fragment for Signature:
-${signedInfoXmlString}${colors.reset}`);
-
-            // 2. <ds:SignedInfo> EXI 인코딩 (XML Signature 스키마 사용, [V2G20-1449])
-            console.log(`  2. Encoding <ds:SignedInfo> fragment to EXI using ${path.basename(XMLDSIG_SCHEMA_PATH)}...`);
+            // 2. <xmlsig:SignedInfo> 프래그먼트를 EXI로 인코딩
+            console.log('  2. Encoding <xmlsig:SignedInfo> fragment to EXI using xmldsig-core-schema.xsd...');
             const signedInfoExiBase64 = await exiConverter.encodeToEXI(
                 signedInfoXmlString,
-                XMLDSIG_SCHEMA_PATH, // XML Signature 스키마 사용
-                true, // 프래그먼트 인코딩
+                XMLDSIG_SCHEMA_PATH,
+                true,
                 'signed_info'
             );
-            const signedInfoExiBuffer = Buffer.from(signedInfoExiBase64, 'base64');
-            console.log(`${colors.dim}  Encoded SignedInfo EXI Length: ${signedInfoExiBuffer.length}${colors.reset}`);
+            console.log(`  Encoded SignedInfo EXI Length: ${Buffer.from(signedInfoExiBase64, 'base64').length}`);
 
-            // 3. EXI 데이터 해싱 (SignatureMethod에 맞는 해시 알고리즘 사용)
-            console.log(`  3. Calculating ${signingAlgorithms.hashAlgo.toUpperCase()} hash of SignedInfo EXI...`);
-            const signedInfoHash = crypto.createHash(signingAlgorithms.hashAlgo);
-            signedInfoHash.update(signedInfoExiBuffer);
-            const digestToSign = signedInfoHash.digest(); // 원시 바이너리 해시
-            console.log(`${colors.dim}  Hash to sign (Base64): ${digestToSign.toString('base64')}${colors.reset}`);
+            // 3. EXI 데이터의 해시 계산
+            console.log('  3. Calculating SHAKE256 hash of SignedInfo EXI...');
+            const hashToSign = crypto.createHash(signingAlgorithms.hashAlgo)
+                .update(Buffer.from(signedInfoExiBase64, 'base64'))
+                .digest('base64');
+            console.log(`  Hash to sign (Base64): ${hashToSign}`);
 
-            // 4. 개인 키 로드 및 해시 값 서명
-            console.log(`${colors.dim}  4. Loading private key: ${PRIVATE_KEY_PATH}${colors.reset}`);
-            const privateKeyPem = await fs.readFile(PRIVATE_KEY_PATH, 'utf8');
-            
-            console.log(`${colors.dim}  Signing hash using private key and algorithm ${signingAlgorithms.hashAlgo}...${colors.reset}`);
-            const signer = crypto.createSign(signingAlgorithms.hashAlgo); // 해시 알고리즘 지정
-            signer.update(digestToSign); // 원시 바이너리 해시 전달
-            signer.end();
-            
-            // ECDSA 서명 시 DER 인코딩 적용 (ISO 15118-2 예제 및 일반적 관행 참고)
-            // EdDSA의 경우 인코딩 옵션 불필요하거나 다를 수 있음 -> 현재 EdDSA 지원 안함 가정
-            let signatureOptions = { key: privateKeyPem };
-            if (signingAlgorithms.signatureMethod.includes('ecdsa')) {
-                console.log(`${colors.dim}  Applying DER encoding for ECDSA signature.${colors.reset}`);
-                signatureOptions.dsaEncoding = 'der'; 
+            // 4. 개인 키로 해시 서명
+            console.log(`  4. Loading private key: ${PRIVATE_KEY_PATH}`);
+            console.log(`  Signing hash using private key and algorithm ${signingAlgorithms.hashAlgo}...`);
+
+            let signatureValue;
+            if (signingAlgorithms.signatureMethod.includes('Ed448')) {
+                // Ed448 서명을 위해 OpenSSL 사용
+                const tempHashFile = path.join(__dirname, 'temp_hash.bin');
+                const tempSigFile = path.join(__dirname, 'temp_sig.bin');
+                
+                try {
+                    // 해시를 바이너리 파일로 저장
+                    await fs.writeFile(tempHashFile, Buffer.from(hashToSign, 'base64'));
+                    
+                    // OpenSSL로 Ed448 서명 수행
+                    const signCmd = `openssl pkeyutl -sign -inkey "${PRIVATE_KEY_PATH}" -in "${tempHashFile}" -out "${tempSigFile}" -rawin -keyform PEM`;
+                    await exec(signCmd);
+                    
+                    // 서명 결과를 Base64로 읽기
+                    const signatureBuffer = await fs.readFile(tempSigFile);
+                    signatureValue = signatureBuffer.toString('base64');
+                } finally {
+                    // 임시 파일 정리
+                    await fs.unlink(tempHashFile).catch(() => {});
+                    await fs.unlink(tempSigFile).catch(() => {});
+                }
+            } else {
+                // 기존 ECDSA 서명 로직
+                const privateKey = await fs.readFile(PRIVATE_KEY_PATH, 'utf8');
+                const sign = crypto.createSign(signingAlgorithms.hashAlgo);
+                sign.update(Buffer.from(signedInfoExiBase64, 'base64'));
+                signatureValue = sign.sign(privateKey, 'base64');
             }
-            const signature = signer.sign(signatureOptions); // 원시 바이너리 서명 값
-            console.log(`${colors.dim}  Raw signature length: ${signature.length}${colors.reset}`);
 
-            // 5. 서명 값 Base64 인코딩
-            calculatedSignatureValue = signature.toString('base64');
-            console.log(`${colors.fg.green}[3/7] SignatureValue 계산 완료 (Base64):${colors.reset} ${calculatedSignatureValue}`);
+            calculatedSignatureValue = signatureValue;
+            console.log(`${colors.fg.green}[3/7] SignatureValue 계산 완료: ${calculatedSignatureValue}${colors.reset}`);
 
-        } catch(error) {
+        } catch (error) {
             console.error(`${colors.fg.red}[3/7] SignatureValue 계산 중 오류 발생:${colors.reset}`, error);
-            calculatedSignatureValue = 'ERROR_SIGNATURE_VALUE';
+            throw error;
         }
 
         // --- 4. 최종 XML 조립 (계산된 SignatureValue 적용) ---
@@ -532,7 +582,7 @@ ${signedInfoXmlString}${colors.reset}`);
             .ele(NAMESPACES.ns, 'CertificateInstallationReq', { // Root element with default namespace
                 'xmlns': NAMESPACES.ns, // Default namespace declaration
                 'xmlns:ct': NAMESPACES.ct,
-                'xmlns:ds': NAMESPACES.ds,
+                'xmlns:xmlsig': NAMESPACES.xmlsig,
                 'xmlns:xsi': NAMESPACES.xsi,
                 'xsi:schemaLocation': 'urn:iso:std:iso:15118:-20:CommonMessages V2G_CI_CommonMessages.xsd' // 스키마 위치 명시 (실제 유효성 검증에 사용될 수 있음)
             });
@@ -542,45 +592,47 @@ ${signedInfoXmlString}${colors.reset}`);
         header.ele(NAMESPACES.ct, 'SessionID').txt(sessionId);
         header.ele(NAMESPACES.ct, 'TimeStamp').txt(Math.floor(Date.now() / 1000)); // 초 단위 타임스탬프 (xsd:unsignedLong)
 
-        // Signature (XMLDSig 네임스페이스 사용)
-        const signature = root.ele(NAMESPACES.ds, 'Signature'); // 예제와 달리 Header 바깥에 위치? -> 예제 확인 결과 루트 요소 바로 아래 자식으로 위치. 수정.
-        // Signature 요소 위치 수정: 루트 요소의 자식으로 이동
-        // const signature = root.ele(NAMESPACES.ds, 'Signature', { Id: "Signature1" }); // 예제처럼 Id 추가 가능
-        // signature.att('Id', 'Signature1'); // Id 속성 추가 방식 변경
+        // Signature (XMLDSig 네임스페이스 사용) - Header 안으로 이동
+        const signature = header.ele(NAMESPACES.xmlsig, 'Signature'); // 수정된 위치 (Header 아래)
 
-        const signedInfo = signature.ele(NAMESPACES.ds, 'SignedInfo');
+        const signedInfo = signature.ele(NAMESPACES.xmlsig, 'SignedInfo');
         // [V2G20-765] CanonicalizationMethod Algorithm 수정
-        signedInfo.ele(NAMESPACES.ds, 'CanonicalizationMethod', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
+        signedInfo.ele(NAMESPACES.xmlsig, 'CanonicalizationMethod', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
         // [V2G20-2473] SignatureMethod Algorithm 수정 (ecdsa-sha512)
-        signedInfo.ele(NAMESPACES.ds, 'SignatureMethod', { Algorithm: signingAlgorithms.signatureMethod });
+        signedInfo.ele(NAMESPACES.xmlsig, 'SignatureMethod', { Algorithm: signingAlgorithms.signatureMethod });
 
-        const reference = signedInfo.ele(NAMESPACES.ds, 'Reference', { URI: `#${DEFAULT_ELEMENT_TO_DIGEST_ID}` }); // Use constant ID
-        const transforms = reference.ele(NAMESPACES.ds, 'Transforms');
+        const reference = signedInfo.ele(NAMESPACES.xmlsig, 'Reference', { URI: `#${elementToDigestId}` }); // Use constant ID
+        const transforms = reference.ele(NAMESPACES.xmlsig, 'Transforms');
         // [V2G20-766] Transform Algorithm 수정, [V2G20-767] Transform은 하나만
-        transforms.ele(NAMESPACES.ds, 'Transform', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
+        transforms.ele(NAMESPACES.xmlsig, 'Transform', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
         // [V2G20-2475] DigestMethod Algorithm 수정 (sha512)
-        reference.ele(NAMESPACES.ds, 'DigestMethod', { Algorithm: signingAlgorithms.digestMethod });
-        reference.ele(NAMESPACES.ds, 'DigestValue').txt(calculatedDigestValue); // 계산된 DigestValue 사용
+        reference.ele(NAMESPACES.xmlsig, 'DigestMethod', { Algorithm: signingAlgorithms.digestMethod });
+        reference.ele(NAMESPACES.xmlsig, 'DigestValue').txt(calculatedDigestValue); // 계산된 DigestValue 사용
 
-        signature.ele(NAMESPACES.ds, 'SignatureValue').txt(calculatedSignatureValue); // 계산된 값 사용 (현재 Placeholder)
+        signature.ele(NAMESPACES.xmlsig, 'SignatureValue').txt(calculatedSignatureValue); // 계산된 값 사용 (현재 Placeholder)
 
         // OEMProvisioningCertificateChain (Id 추가하여 서명 대상 식별)
-        const finalOemProvCertChain = root.ele(NAMESPACES.ns, 'OEMProvisioningCertificateChain', { Id: DEFAULT_ELEMENT_TO_DIGEST_ID }); // Use constant ID
+        const finalOemProvCertChain = root.ele(NAMESPACES.ns, 'OEMProvisioningCertificateChain', { Id: elementToDigestId }); // Use constant ID
         finalOemProvCertChain.ele(NAMESPACES.ns, 'Certificate').txt(oemCertBase64);
-        // SubCertificates는 예제에 없으므로 생략. 필요시 PEM 파일 파싱하여 추가 필요.
-        // const subCerts = oemProvCertChain.ele(NAMESPACES.ns, 'SubCertificates');
-        // subCerts.ele(NAMESPACES.ns, 'Certificate').txt('SUB_CERT_1_BASE64');
-
+        
+        // 서브 인증서가 있으면 SubCertificates 요소 추가 (최종 XML에도 포함)
+        if (oemSubCertsBase64.length > 0) {
+            const subCertsNode = finalOemProvCertChain.ele(NAMESPACES.ns, 'SubCertificates');
+            oemSubCertsBase64.forEach(subCertBase64 => {
+                subCertsNode.ele(NAMESPACES.ns, 'Certificate').txt(subCertBase64);
+            });
+        }
+        
         // ListOfRootCertificateIDs (CommonTypes 네임스페이스 사용)
         const listOfRoots = root.ele(NAMESPACES.ns, 'ListOfRootCertificateIDs');
         rootCertInfos.forEach(certInfo => {
             const rootCertId = listOfRoots.ele(NAMESPACES.ct, 'RootCertificateID'); // ct 네임스페이스 사용
-            // 예제에는 xmlsig:X509IssuerSerial 이 있지만, ds 네임스페이스가 표준임. ds 사용.
-            // 네임스페이스 접두사 'xmlsig'는 예제에서 정의되지 않았으므로 'ds'를 사용하는 것이 안전.
-            // 실제 스키마(xmldsig-core-schema.xsd) 확인 필요. 여기서는 ds로 진행.
-            const issuerSerial = rootCertId.ele(NAMESPACES.ds, 'X509IssuerSerial');
-            issuerSerial.ele(NAMESPACES.ds, 'X509IssuerName').txt(certInfo.issuerName);
-            issuerSerial.ele(NAMESPACES.ds, 'X509SerialNumber').txt(certInfo.serialNumber);
+            // 예제에는 xmlsig:X509IssuerSerial 이 있지만, ds 네임스페이스가 표준임. ds 사용. -> xmlsig 사용으로 통일
+            // 네임스페이스 접두사 'xmlsig'는 예제에서 정의되지 않았으므로 'ds'를 사용하는 것이 안전. -> xmlsig 사용
+            // 실제 스키마(xmldsig-core-schema.xsd) 확인 필요. 여기서는 ds로 진행. -> xmlsig 사용
+            const issuerSerial = rootCertId.ele(NAMESPACES.xmlsig, 'X509IssuerSerial');
+            issuerSerial.ele(NAMESPACES.xmlsig, 'X509IssuerName').txt(certInfo.issuerName);
+            issuerSerial.ele(NAMESPACES.xmlsig, 'X509SerialNumber').txt(certInfo.serialNumber);
         });
 
         // MaximumContractCertificateChains
@@ -640,7 +692,7 @@ ${signedInfoXmlString}${colors.reset}`);
 function createErrorXmlV20(sessionId, oemCertBase64, rootCertInfos, digestValue, signatureValue, algorithms) {
     const root = create({ version: '1.0', encoding: 'UTF-8' })
         .ele(NAMESPACES.ns, 'CertificateInstallationReq', {
-            'xmlns': NAMESPACES.ns, 'xmlns:ct': NAMESPACES.ct, 'xmlns:ds': NAMESPACES.ds,
+            'xmlns': NAMESPACES.ns, 'xmlns:ct': NAMESPACES.ct, /* 'xmlns:ds': NAMESPACES.ds, */ 'xmlns:xmlsig': NAMESPACES.xmlsig,
             'xmlns:xsi': NAMESPACES.xsi,
             'xsi:schemaLocation': 'urn:iso:std:iso:15118:-20:CommonMessages V2G_CI_CommonMessages.xsd'
         });
@@ -648,28 +700,42 @@ function createErrorXmlV20(sessionId, oemCertBase64, rootCertInfos, digestValue,
     const header = root.ele(NAMESPACES.ct, 'Header');
     header.ele(NAMESPACES.ct, 'SessionID').txt(sessionId || 'ERROR_SESSION');
     header.ele(NAMESPACES.ct, 'TimeStamp').txt(Math.floor(Date.now() / 1000));
-    // Signature (Error Placeholder)
-    const signature = root.ele(NAMESPACES.ds, 'Signature');
-    const signedInfo = signature.ele(NAMESPACES.ds, 'SignedInfo');
+
+    // Signature (Error Placeholder) - Header 안으로 이동
+    const signature = header.ele(NAMESPACES.xmlsig, 'Signature'); // 수정된 위치
+
+    const signedInfo = signature.ele(NAMESPACES.xmlsig, 'SignedInfo');
     // 알고리즘 적용
-    signedInfo.ele(NAMESPACES.ds, 'CanonicalizationMethod', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
-    signedInfo.ele(NAMESPACES.ds, 'SignatureMethod', { Algorithm: algorithms.signatureMethod });
-    const reference = signedInfo.ele(NAMESPACES.ds, 'Reference', { URI: `#${DEFAULT_ELEMENT_TO_DIGEST_ID}` });
-    reference.ele(NAMESPACES.ds, 'Transforms').ele(NAMESPACES.ds, 'Transform', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
-    reference.ele(NAMESPACES.ds, 'DigestMethod', { Algorithm: algorithms.digestMethod });
-    reference.ele(NAMESPACES.ds, 'DigestValue').txt(digestValue); // ERROR_DIGEST_VALUE
-    signature.ele(NAMESPACES.ds, 'SignatureValue').txt(signatureValue); // ERROR_SIGNATURE_VALUE
+    signedInfo.ele(NAMESPACES.xmlsig, 'CanonicalizationMethod', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
+    signedInfo.ele(NAMESPACES.xmlsig, 'SignatureMethod', { Algorithm: algorithms.signatureMethod });
+    const reference = signedInfo.ele(NAMESPACES.xmlsig, 'Reference', { URI: `#${DEFAULT_ELEMENT_TO_DIGEST_ID}` });
+    reference.ele(NAMESPACES.xmlsig, 'Transforms').ele(NAMESPACES.xmlsig, 'Transform', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
+    reference.ele(NAMESPACES.xmlsig, 'DigestMethod', { Algorithm: algorithms.digestMethod });
+    reference.ele(NAMESPACES.xmlsig, 'DigestValue').txt(digestValue); // ERROR_DIGEST_VALUE
+    signature.ele(NAMESPACES.xmlsig, 'SignatureValue').txt(signatureValue); // ERROR_SIGNATURE_VALUE
     // KeyInfo 제거됨
     // Body (Error Placeholder)
     const oemProvCertChain = root.ele(NAMESPACES.ns, 'OEMProvisioningCertificateChain', { Id: DEFAULT_ELEMENT_TO_DIGEST_ID }); // Use constant ID
     oemProvCertChain.ele(NAMESPACES.ns, 'Certificate').txt(oemCertBase64 || 'ERROR_OEM_CERT');
+    
+    // 오류 발생 시 SubCertificates 요소는 생략 (단순화)
+    // 필요시 아래 주석 해제 후 값 전달 필요
+    /*
+    if (oemSubCertsBase64 && oemSubCertsBase64.length > 0) {
+        const subCertsNode = oemProvCertChain.ele(NAMESPACES.ns, 'SubCertificates');
+        oemSubCertsBase64.forEach(subCertBase64 => {
+            subCertsNode.ele(NAMESPACES.ns, 'Certificate').txt(subCertBase64);
+        });
+    }
+    */
+    
     const listOfRoots = root.ele(NAMESPACES.ns, 'ListOfRootCertificateIDs');
     if (rootCertInfos && rootCertInfos.length > 0) {
         rootCertInfos.forEach(certInfo => {
              const rootCertId = listOfRoots.ele(NAMESPACES.ct, 'RootCertificateID');
-             const issuerSerial = rootCertId.ele(NAMESPACES.ds, 'X509IssuerSerial');
-             issuerSerial.ele(NAMESPACES.ds, 'X509IssuerName').txt(certInfo.issuerName);
-             issuerSerial.ele(NAMESPACES.ds, 'X509SerialNumber').txt(certInfo.serialNumber);
+             const issuerSerial = rootCertId.ele(NAMESPACES.xmlsig, 'X509IssuerSerial');
+             issuerSerial.ele(NAMESPACES.xmlsig, 'X509IssuerName').txt(certInfo.issuerName);
+             issuerSerial.ele(NAMESPACES.xmlsig, 'X509SerialNumber').txt(certInfo.serialNumber);
         });
     } else {
          listOfRoots.txt("<!-- 루트 인증서 정보 로드 실패 -->");

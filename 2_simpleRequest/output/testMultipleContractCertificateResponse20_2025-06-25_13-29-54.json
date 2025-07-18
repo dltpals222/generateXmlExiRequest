@@ -1,0 +1,69 @@
+{
+  "timestamp": "2025-06-25T04:29:54.297Z",
+  "endpoint": "testMultipleContractCertificateResponse20",
+  "url": "http://localhost:7600/api/contract-cert/testMultipleContractCertificateResponse20",
+  "statusCode": 200,
+  "headers": {
+    "x-powered-by": "Express",
+    "access-control-allow-origin": "*",
+    "content-type": "application/json; charset=utf-8",
+    "content-length": "12799",
+    "etag": "W/\"31ff-2pI8uNkAm4yFouqdSUqsEnYg5Gg\"",
+    "date": "Wed, 25 Jun 2025 04:29:54 GMT",
+    "connection": "keep-alive",
+    "keep-alive": "timeout=5"
+  },
+  "responseData": {
+    "message": "Phase 4.1 다중 계약 인증서 체인 응답 생성 테스트 완료",
+    "results": {
+      "testCases": [
+        {
+          "name": "Valid ISO 15118-20 XML Generation with SECP521",
+          "status": "PASSED",
+          "xmlLength": 5636,
+          "hasHeader": true,
+          "hasResponseCode": true,
+          "hasSignature": true,
+          "hasSignedInstallationData": true,
+          "responseType": "SUCCESS",
+          "xmlPreview": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CertificateInstallationRes xmlns=\"urn:iso:std:iso:15118:-20:CommonMessages\" xmlns:v2gci_ct=\"urn:iso:std:iso:15118:-20:CommonTypes\" xmlns:xmlsig=\"http://www.w3.o...",
+          "fullXml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CertificateInstallationRes xmlns=\"urn:iso:std:iso:15118:-20:CommonMessages\" xmlns:v2gci_ct=\"urn:iso:std:iso:15118:-20:CommonTypes\" xmlns:xmlsig=\"http://www.w3.org/2000/09/xmldsig#\">\n  <Header>\n    <SessionID>53710B5FED324EC2</SessionID>\n    <TimeStamp>1750825794</TimeStamp>\n    <xmlsig:Signature xmlns:xmlsig=\"http://www.w3.org/2000/09/xmldsig#\">\n      <ds:SignedInfo xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\">\n        <ds:CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/canonical-exi/\"/>\n        <ds:SignatureMethod Algorithm=\"http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512\"/>\n        <ds:Reference URI=\"#InstallData_794279\">\n          <ds:Transforms>\n            <ds:Transform Algorithm=\"http://www.w3.org/TR/canonical-exi/\"/>\n          </ds:Transforms>\n          <ds:DigestMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#sha512\"/>\n          <ds:DigestValue>dBq35FK0e0mp53DEGIwCCv1wZXjI5z2oOG9VO5aeH9A=</ds:DigestValue>\n        </ds:Reference>\n      </ds:SignedInfo>\n      <ds:SignatureValue>MEQCIA6Jn3JOi2hG2/ZFTE7FvLcO+hlJOroDRptmpQ9A30NlAiBfxpdl1enoVQak5/mtnCsA2IIlpOA0gDLuwHAaid5Rdw==</ds:SignatureValue>\n    </xmlsig:Signature>\n  </Header>\n  <ResponseCode>OK</ResponseCode>\n  <EVSEProcessing>Finished</EVSEProcessing>\n  <CPSCertificateChain>\n    <Certificate>MEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISA==</Certificate>\n    <SubCertificates>\n      <Certificate>MElJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUk=</Certificate>\n    </SubCertificates>\n  </CPSCertificateChain>\n  <SignedInstallationData Id=\"InstallData_794279\">\n    <ContractCertificateChain>\n      <Certificate>MEVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVF</Certificate>\n      <SubCertificates>\n        <Certificate>MEZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkY=</Certificate>\n        <Certificate>MEdHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHRw==</Certificate>\n      </SubCertificates>\n    </ContractCertificateChain>\n    <ECDHCurve>SECP521</ECDHCurve>\n    <DHPublicKey>QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQQ==</DHPublicKey>\n    <SECP521_EncryptedPrivateKey>Q0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQw==</SECP521_EncryptedPrivateKey>\n  </SignedInstallationData>\n  <RemainingContractCertificateChains>3</RemainingContractCertificateChains>\n</CertificateInstallationRes>\n"
+        },
+        {
+          "name": "Valid ISO 15118-20 XML Generation with X448",
+          "status": "PASSED",
+          "xmlLength": 5515,
+          "hasHeader": true,
+          "hasResponseCode": true,
+          "hasSignature": true,
+          "hasSignedInstallationData": true,
+          "responseType": "SUCCESS",
+          "xmlPreview": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CertificateInstallationRes xmlns=\"urn:iso:std:iso:15118:-20:CommonMessages\" xmlns:v2gci_ct=\"urn:iso:std:iso:15118:-20:CommonTypes\" xmlns:xmlsig=\"http://www.w3.o...",
+          "fullXml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CertificateInstallationRes xmlns=\"urn:iso:std:iso:15118:-20:CommonMessages\" xmlns:v2gci_ct=\"urn:iso:std:iso:15118:-20:CommonTypes\" xmlns:xmlsig=\"http://www.w3.org/2000/09/xmldsig#\">\n  <Header>\n    <SessionID>00A0C3A67D001147</SessionID>\n    <TimeStamp>1750825794</TimeStamp>\n    <xmlsig:Signature xmlns:xmlsig=\"http://www.w3.org/2000/09/xmldsig#\">\n      <ds:SignedInfo xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\">\n        <ds:CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/canonical-exi/\"/>\n        <ds:SignatureMethod Algorithm=\"urn:iso:std:iso:15118:-20:Security:xmldsig#Ed448\"/>\n        <ds:Reference URI=\"#InstallData_794285\">\n          <ds:Transforms>\n            <ds:Transform Algorithm=\"http://www.w3.org/TR/canonical-exi/\"/>\n          </ds:Transforms>\n          <ds:DigestMethod Algorithm=\"urn:iso:std:iso:15118:-20:Security:xmlenc#SHAKE256\"/>\n          <ds:DigestValue>wRNxaBHQaVCNHxJFWEhQr34Eop0xH6nlLEKyE6hWbLI=</ds:DigestValue>\n        </ds:Reference>\n      </ds:SignedInfo>\n      <ds:SignatureValue>MEUCIQCCtyIiUMnEmt/ny5sJGdN7T9ziU3JLMQelG/nr116QCwIgBUI5C1hovdGIo4wb9q8LVJEZcnH38MaUu9LxalQcI2E=</ds:SignatureValue>\n    </xmlsig:Signature>\n  </Header>\n  <ResponseCode>OK</ResponseCode>\n  <EVSEProcessing>Finished</EVSEProcessing>\n  <CPSCertificateChain>\n    <Certificate>MEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISA==</Certificate>\n    <SubCertificates>\n      <Certificate>MElJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUk=</Certificate>\n    </SubCertificates>\n  </CPSCertificateChain>\n  <SignedInstallationData Id=\"InstallData_794285\">\n    <ContractCertificateChain>\n      <Certificate>MEVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVF</Certificate>\n      <SubCertificates>\n        <Certificate>MEZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkY=</Certificate>\n        <Certificate>MEdHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHRw==</Certificate>\n      </SubCertificates>\n    </ContractCertificateChain>\n    <ECDHCurve>X448</ECDHCurve>\n    <DHPublicKey>QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJC</DHPublicKey>\n    <X448_EncryptedPrivateKey>RERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERE</X448_EncryptedPrivateKey>\n  </SignedInstallationData>\n  <RemainingContractCertificateChains>3</RemainingContractCertificateChains>\n</CertificateInstallationRes>\n"
+        },
+        {
+          "name": "Valid FAILED Response",
+          "status": "FAILED",
+          "error": "Body creation failed: undefined"
+        },
+        {
+          "name": "Invalid: Bad SessionID",
+          "status": "PASSED",
+          "message": "Correctly failed as expected",
+          "error": "SessionID must be exactly 16 hex characters (8 bytes), got 15 characters"
+        },
+        {
+          "name": "Invalid: Missing SignatureData",
+          "status": "PASSED",
+          "message": "Correctly failed as expected",
+          "error": "Body creation failed: CPS certificate is required for CPSCertificateChain"
+        }
+      ],
+      "summary": {
+        "total": 5,
+        "passed": 4,
+        "failed": 1
+      }
+    }
+  }
+}

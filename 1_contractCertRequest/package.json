@@ -1,0 +1,30 @@
+{
+  "name": "ocpp-certificate-request",
+  "version": "1.0.0",
+  "description": "ISO 15118-2와 ISO 15118-20 표준에 따른 전기차 인증서 요청 처리 도구",
+  "main": "iso15118CertRequest.js",
+  "scripts": {
+    "gen-v2": "node generateCertRequestXmlInstallVersion2.js",
+    "gen-v20": "node generateCertRequestXmlInstallVersion20.js",
+    "request-v2": "node iso15118CertRequest.js",
+    "request-v2-update": "node iso15118CertRequest.js update",
+    "request-v20": "node iso15118_20CertRequest.js"
+  },
+  "keywords": [
+    "ocpp",
+    "iso15118",
+    "evcc",
+    "certificate",
+    "exi"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^3.3.2",
+    "xmlbuilder2": "^3.1.1",
+    "libxmljs2": "^0.31.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+} 

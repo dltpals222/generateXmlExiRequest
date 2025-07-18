@@ -1,0 +1,36 @@
+{
+  "generated": "2025-06-11T07:59:19.328Z",
+  "standards": [
+    "V2G20-2497",
+    "V2G20-2498",
+    "V2G20-2499"
+  ],
+  "encryption": "AES-GCM-256",
+  "totalKeys": 2,
+  "successfulEncryptions": 1,
+  "results": [
+    {
+      "keyFilePath": "C:\\Users\\lw\\Desktop\\LSM\\imsiFolder\\ski-method2-certificate-generator\\generated-certificates\\cert_2b638c4a6b851bd4.key",
+      "certFilePath": "C:\\Users\\lw\\Desktop\\LSM\\imsiFolder\\ski-method2-certificate-generator\\generated-certificates\\cert_2b638c4a6b851bd4.pem",
+      "pcid": "KRLWPC7CAX69WE0001",
+      "error": "Failed to extract private key: Expected 66 bytes for 521-bit key, got 57 bytes",
+      "success": false
+    },
+    {
+      "keyFilePath": "C:\\Users\\lw\\Desktop\\LSM\\imsiFolder\\ski-method2-certificate-generator\\generated-certificates\\cert_46c2c18cc31bc20f.key",
+      "certFilePath": "C:\\Users\\lw\\Desktop\\LSM\\imsiFolder\\ski-method2-certificate-generator\\generated-certificates\\cert_46c2c18cc31bc20f.pem",
+      "pcid": "KRLWSCF1G544XK2002",
+      "privateKey521": "0104142619406ED3FC2538B81CBD8641FCE2951412578ACBD6DDE0CC0F4219C53C9E4B611C06624848026E77284715C769E9AAED7D2C2D9811D0F5D062EE6FC0645B",
+      "sessionKey": "1CF9A4BB950DFB4CC0EA5ADB64C5D2DD086F5984CE87353EFE8EE88A2E5F3D92",
+      "ski": "4F5E1E7A0A8245C0",
+      "aad": "4B524C575343463147353434584B323030324F5E1E7A0A8245C0",
+      "privateKey528": "000208284C3280DDA7F84A7170397B0C83F9C52A2824AF1597ADBBC1981E84338A793C96C2380CC4909004DCEE508E2B8ED3D355DAFA585B3023A1EBA0C5DCDF80C8",
+      "iv": "1BE195E5385685B8924FBD31",
+      "ciphertext": "9DC9A5BB37885C1BE289C653909526FA4245F18962FC28BE83C58EC4A1C6BF86DF85856C58FD45BE360C409715C2D2C4BC14C6BFD5728BA04793458A7FE86C79009E",
+      "authTag": "30DC3538D65AB4EEE250A3ACA9041DE3",
+      "encryptedPrivateKeyField": "1BE195E5385685B8924FBD319DC9A5BB37885C1BE289C653909526FA4245F18962FC28BE83C58EC4A1C6BF86DF85856C58FD45BE360C409715C2D2C4BC14C6BFD5728BA04793458A7FE86C79009E30DC3538D65AB4EEE250A3ACA9041DE3",
+      "outputPath": "C:\\Users\\lw\\Desktop\\LSM\\imsiFolder\\ski-method2-certificate-generator\\encrypted-private-keys\\SECP521R1_AES-GCM-256_V2G20-2497_encrypted_cert_46c2c18cc31bc20f.bin",
+      "success": true
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "description": "V2G AAD Generation - Sample Data",
+  "standard": "V2G20-2492",
+  "v2g_entities": [
+    {
+      "emaid": "DEKRLW*EV*001*12345",
+      "pcid": "KRLWPC7CAX69WE0AAA",
+      "ski": "475077CF4B227C6012345678ABCDEF00",
+      "description": "Sample SECP521R1 entity"
+    },
+    {
+      "emaid": "DEKRLW*EV*002*67890",
+      "pcid": "KRLWSCF1G544XK2BBB",
+      "ski": "42A6F981E5F7166087654321FEDCBA00",
+      "description": "Sample Ed448 entity"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CertificateInstallationReq xmlns="urn:iso:std:iso:15118:-20:CommonMessages" xmlns:ct="urn:iso:std:iso:15118:-20:CommonTypes" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:iso:std:iso:15118:-20:CommonMessages V2G_CI_CommonMessages.xsd">
+  <ct:Header>
+    <ct:SessionID>3542DB0C8A1035B0</ct:SessionID>
+    <ct:TimeStamp>1744871982</ct:TimeStamp>
+  </ct:Header>
+  <ds:Signature>
+    <ds:SignedInfo>
+      <ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/canonical-exi/"/>
+      <ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512"/>
+      <ds:Reference URI="#CertChain001">
+        <ds:Transforms>
+          <ds:Transform Algorithm="http://www.w3.org/TR/canonical-exi/"/>
+        </ds:Transforms>
+        <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"/>
+        <ds:DigestValue>2ZCjO3ThUyNwVy62/kzfmjajtpqblXJvc96InqVMtNbW0NT+kf56HP3RwPQ2MNZnVw30T4g3xb7ypKjUnkDHmQ==</ds:DigestValue>
+      </ds:Reference>
+    </ds:SignedInfo>
+    <ds:SignatureValue>MIGIAkIBOpQsgHQ/st4JlOSUjhhjko+PSMwKTYW1Q8b7v6n5I945j9dNmGN/iWzupMY3IPXbwjvF7DuzLCagtxx8scINPuECQgDJd0s6wbBtNINTA/PZaRrXUJAyIlyQHm74BqRWkH2JIYEoPZBHWSjY+mJidbOXv00fGnroW44q0zzFso1gvenR7Q==</ds:SignatureValue>
+  </ds:Signature>
+  <OEMProvisioningCertificateChain Id="CertChain001">
+    <Certificate>MIICpjCCAgigAwIBAgIUYdLNGRtcA+fOrNe6x38f+ryTMxgwCgYIKoZIzj0EAwQwMDESMBAGA1UECgwJbGluZXdvcmxkMRowGAYDVQQDDBFPRU0gU3ViQ0EgMiBFQ0RTQTAeFw0yNTA0MTYwNjMxMTZaFw0yNTA3MTUwNjMxMTZaMD0xCzAJBgNVBAYTAktSMRIwEAYDVQQKDAlsaW5ld29ybGQxGjAYBgNVBAMMEWFzZGYyQTM0NUE0NkE0NjQ2MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAqpwdvLaOMqSAp39ZVJMJ+lv5++iyyzrF7IySvY+4TWJCSCv9ud8odrS1a1uZpj/cxupvRZeL2X9GHJRHQmerRmEAOJyUVtdQWhboCrf2+p0jih/BFSkJKBcYoFpbuxai1a+sRbO30aqdPyE3ScGyuJTNcPeWo+8bk33uEMnxi5P/Y5qjga8wgawwDAYDVR0TAQH/BAIwADAOBgNVHQ8BAf8EBAMCA+gwIAYDVR0OAQH/BBYEFKz1oBXlQ8HnmX0b3/HSr3C3qSeXMCIGA1UdIwEB/wQYMBaAFIm8Gqr7mssTzI/9bAHH/ZJMjIs5MEYGCCsGAQUFBwEBAQH/BDcwNTAzBggrBgEFBQcwAYYnaHR0cHM6Ly9wa2ktc3ZjLm1pcGxsYWIuY29tL29jc3AvdmVyaWZ5MAoGCCqGSM49BAMEA4GLADCBhwJBGIsSm7W+ipomwz6leCaaawlFJ2upvWhkgP3JcsiFoKbVefnqTEkW5E8VqGUCK9aQrRN4Vz3/oj0NDc21cfe/dV8CQgEc9vlxuH/s3WB5Fsh923A/nAnEFG0qHyHpC/+IBEJC/biXQ7PdqpScUOw4irNLitMNmCT9j/MJ+6ztNaE6rVrm5Q==</Certificate>
+  </OEMProvisioningCertificateChain>
+  <ListOfRootCertificateIDs>
+    <ct:RootCertificateID>
+      <ds:X509IssuerSerial>
+        <ds:X509IssuerName>CN=eMSP Root CA ECDSA,O=lineworld</ds:X509IssuerName>
+        <ds:X509SerialNumber>340826674011415973017725570064100127583019766997</ds:X509SerialNumber>
+      </ds:X509IssuerSerial>
+    </ct:RootCertificateID>
+    <ct:RootCertificateID>
+      <ds:X509IssuerSerial>
+        <ds:X509IssuerName>CN=eMSP Root CA EdDSA,O=lineworld</ds:X509IssuerName>
+        <ds:X509SerialNumber>540346836619953200679415648327689259283620043258</ds:X509SerialNumber>
+      </ds:X509IssuerSerial>
+    </ct:RootCertificateID>
+    <ct:RootCertificateID>
+      <ds:X509IssuerSerial>
+        <ds:X509IssuerName>O=lineworld,CN=MO Root CA</ds:X509IssuerName>
+        <ds:X509SerialNumber>187876010848511601921987162400718891077819971545</ds:X509SerialNumber>
+      </ds:X509IssuerSerial>
+    </ct:RootCertificateID>
+    <ct:RootCertificateID>
+      <ds:X509IssuerSerial>
+        <ds:X509IssuerName>DC=V2G,O=lineworld,CN=V2G Root CA</ds:X509IssuerName>
+        <ds:X509SerialNumber>152954066369386072212139427751237260635764892879</ds:X509SerialNumber>
+      </ds:X509IssuerSerial>
+    </ct:RootCertificateID>
+    <ct:RootCertificateID>
+      <ds:X509IssuerSerial>
+        <ds:X509IssuerName>CN=V2G Root CA ECDSA,O=lineworld</ds:X509IssuerName>
+        <ds:X509SerialNumber>722038374351361365963474852265291688299273697788</ds:X509SerialNumber>
+      </ds:X509IssuerSerial>
+    </ct:RootCertificateID>
+    <ct:RootCertificateID>
+      <ds:X509IssuerSerial>
+        <ds:X509IssuerName>CN=V2G Root CA EdDSA,O=lineworld</ds:X509IssuerName>
+        <ds:X509SerialNumber>327691138646561676928033591232443600467246191690</ds:X509SerialNumber>
+      </ds:X509IssuerSerial>
+    </ct:RootCertificateID>
+  </ListOfRootCertificateIDs>
+  <MaximumContractCertificateChains>2</MaximumContractCertificateChains>
+  <PrioritizedEMAIDs>
+    <EMAID>KRLWPC7CAX69WE0</EMAID>
+    <EMAID>DE-EMA2</EMAID>
+  </PrioritizedEMAIDs>
+</CertificateInstallationReq>

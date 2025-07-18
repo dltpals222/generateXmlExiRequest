@@ -1,0 +1,49 @@
+# Node.js 종속성
+node_modules/
+package-lock.json
+
+# NPM 로그
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 생성된 파일 및 디렉토리
+out/*
+temp/*
+certRequest.xml
+*.exi
+*.bin
+
+# 민감한 인증서 및 키
+cert/*.pem
+cert/*.crt
+cert/*.cer
+key/*.pem
+key/*.key
+key/*.key.pem
+
+# EMAID 파일
+emaid/*.json
+
+# 임시 파일
+temp_encode_*
+*.tmp
+
+# 운영체제 파일
+.DS_Store
+Thumbs.db
+
+# 에디터 설정
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 빌드 로그
+*.log
+
+# 확장자 없는 실행 파일
+*
+!*/
+!*.* 

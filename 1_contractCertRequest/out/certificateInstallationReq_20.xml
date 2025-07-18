@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CertificateInstallationReq xmlns="urn:iso:std:iso:15118:-20:CommonMessages" xmlns:ct="urn:iso:std:iso:15118:-20:CommonTypes" xmlns:xmlsig="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:iso:std:iso:15118:-20:CommonMessages V2G_CI_CommonMessages.xsd">
+  <ct:Header>
+    <ct:SessionID>24957476696E7EDD</ct:SessionID>
+    <ct:TimeStamp>1751353364</ct:TimeStamp>
+    <xmlsig:Signature>
+      <xmlsig:SignedInfo>
+        <xmlsig:CanonicalizationMethod Algorithm="http://www.w3.org/TR/canonical-exi/"/>
+        <xmlsig:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512"/>
+        <xmlsig:Reference URI="#CertChain001">
+          <xmlsig:Transforms>
+            <xmlsig:Transform Algorithm="http://www.w3.org/TR/canonical-exi/"/>
+          </xmlsig:Transforms>
+          <xmlsig:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"/>
+          <xmlsig:DigestValue>7J5R+l/lLAqIXyJ1tT+ycFKL7+wvAusUO2RVatwaSPFubDStNL6zbZn8npIFPri+0hgrT0ASIpInhxWINo2BtQ==</xmlsig:DigestValue>
+        </xmlsig:Reference>
+      </xmlsig:SignedInfo>
+      <xmlsig:SignatureValue>MIGIAkIAu8jmozcs9FM6lLPAt1dGtWN6RSRRyVmA5b/NA7CRppkIZMlCQGe7VtmoPP8Oua+bNVM9fxrM2HmpFs+akQjb3LsCQgFEInCVXsK8IrTRxr8Z/nlfAjJq9Rqpy5B2Gkt8icJC0f2zO+LnP+YDyznpZ3l2+TOrQDH/tkAPfYwx4GH5Y9oKRg==</xmlsig:SignatureValue>
+    </xmlsig:Signature>
+  </ct:Header>
+  <OEMProvisioningCertificateChain Id="CertChain001">
+    <Certificate>MIICnDCCAf2gAwIBAgIUYdLNGRtcA+fOrNe6x38f+ryTMxwwCgYIKoZIzj0EAwQwMDESMBAGA1UECgwJbGluZXdvcmxkMRowGAYDVQQDDBFPRU0gU3ViQ0EgMiBFQ0RTQTAeFw0yNTA2MTgwNjA4MzFaFw0yNTA5MTYwNjA4MzFaMD4xCzAJBgNVBAYTAktSMRIwEAYDVQQKDAlsaW5ld29ybGQxGzAZBgNVBAMMEjFhMmRxMzR0YTR0ZHI1dWNyZDCBmzAQBgcqhkjOPQIBBgUrgQQAIwOBhgAEAUwapvJ6YORAL+sQYX8+AGVtJ8hoWhvwjtL+X/GR7s1kobosmZ0Tsg3D4McWQlalLMz1McXtUHIaeR942sNzY3Q9AUjzFzLHgA/lhYl8ovfo1b55Q+pP2JokrfnNGH32ISztQeCFDXKo3k9YHwO7pjnxfwolqZyN7SqXi46NwXDKbbFio4GjMIGgMAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgPoMBQGA1UdDgEB/wQKBAhJ6sA7XBsRgDAiBgNVHSMBAf8EGDAWgBSJvBqq+5rLE8yP/WwBx/2STIyLOTBGBggrBgEFBQcBAQEB/wQ3MDUwMwYIKwYBBQUHMAGGJ2h0dHBzOi8vcGtpLXN2Yy5taXBsbGFiLmNvbS9vY3NwL3ZlcmlmeTAKBggqhkjOPQQDBAOBjAAwgYgCQgHmnKOHC79MzAYIUz/z2POjCZ6c+I6K8FYSXx51UqghGxymh5KDkvuR0RthrvmvPHSfEslrrcalWGSeqSjOC9COxQJCAMMpbQVajpXuJ5Q/vG4+27jjVKV2O4OEM8pycf82QIQqVVGMMBM/WqiO/OwxcRK8G+f/gUvL97qYiQQUToHLAGpu</Certificate>
+    <SubCertificates>
+      <Certificate>MIICoDCCAgGgAwIBAgIUK2rmNTpJJGnhfX6pn8N6qTmVO5cwCgYIKoZIzj0EAwQwMDESMBAGA1UECgwJbGluZXdvcmxkMRowGAYDVQQDDBFPRU0gUm9vdCBDQSBFQ0RTQTAeFw0yNTA0MDkwNTQ2MDJaFw0yNzA0MDkwNTQ2MDJaMDAxEjAQBgNVBAoMCWxpbmV3b3JsZDEaMBgGA1UEAwwRT0VNIFN1YkNBIDIgRUNEU0EwgZswEAYHKoZIzj0CAQYFK4EEACMDgYYABAFyUap+NTCrQJvOpD6H7tSWZyk53B7mnl8j85bnwvp6XvzAeXtA//abPzQ+qgaQ809wIm7bRWY+HdfRCcgNOWgesgHCZWsRjmjkeLumZwmYJTj09otxXlG6H763AkxWnsRr00/lbRy8B81LAx+321PSg5DmP4kUygVLBXimW+Q2+lGuBaOBtTCBsjASBgNVHRMBAf8ECDAGAQH/AgEAMA4GA1UdDwEB/wQEAwIB7jAgBgNVHQ4BAf8EFgQUibwaqvuayxPMj/1sAcf9kkyMizkwIgYDVR0jAQH/BBgwFoAUMj0ZQV1V9XKvZiJr13/8XgJDCkkwRgYIKwYBBQUHAQEBAf8ENzA1MDMGCCsGAQUFBzABhidodHRwczovL3BraS1zdmMubWlwbGxhYi5jb20vb2NzcC92ZXJpZnkwCgYIKoZIzj0EAwQDgYwAMIGIAkIBgyD9DJwqP8zlcDvpKCGicXZhjb0qMkFvuGPej2PkIELVAgIY8v00WEyfMNlZkF2UrDSjbQaLjD/191RHwaK7WDECQgGlbqYGgoZCenpWuhCtfDqZaD9032rZQ2GeWgbtil/MpgaXZ6JVTOn0Dv9Z62TgEy2jv0IkZtEFwDxICQ58sKcD5A==</Certificate>
+    </SubCertificates>
+  </OEMProvisioningCertificateChain>
+  <ListOfRootCertificateIDs>
+    <ct:RootCertificateID>
+      <xmlsig:X509IssuerSerial>
+        <xmlsig:X509IssuerName>CN=eMSP Root CA ECDSA,O=lineworld</xmlsig:X509IssuerName>
+        <xmlsig:X509SerialNumber>340826674011415973017725570064100127583019766997</xmlsig:X509SerialNumber>
+      </xmlsig:X509IssuerSerial>
+    </ct:RootCertificateID>
+    <ct:RootCertificateID>
+      <xmlsig:X509IssuerSerial>
+        <xmlsig:X509IssuerName>CN=eMSP Root CA EdDSA,O=lineworld</xmlsig:X509IssuerName>
+        <xmlsig:X509SerialNumber>540346836619953200679415648327689259283620043258</xmlsig:X509SerialNumber>
+      </xmlsig:X509IssuerSerial>
+    </ct:RootCertificateID>
+    <ct:RootCertificateID>
+      <xmlsig:X509IssuerSerial>
+        <xmlsig:X509IssuerName>O=lineworld,CN=MO Root CA</xmlsig:X509IssuerName>
+        <xmlsig:X509SerialNumber>187876010848511601921987162400718891077819971545</xmlsig:X509SerialNumber>
+      </xmlsig:X509IssuerSerial>
+    </ct:RootCertificateID>
+    <ct:RootCertificateID>
+      <xmlsig:X509IssuerSerial>
+        <xmlsig:X509IssuerName>CN=OEM Root CA ECDSA,O=lineworld</xmlsig:X509IssuerName>
+        <xmlsig:X509SerialNumber>440406871034553424035597554698355421327882220929</xmlsig:X509SerialNumber>
+      </xmlsig:X509IssuerSerial>
+    </ct:RootCertificateID>
+    <ct:RootCertificateID>
+      <xmlsig:X509IssuerSerial>
+        <xmlsig:X509IssuerName>DC=V2G,O=lineworld,CN=V2G Root CA</xmlsig:X509IssuerName>
+        <xmlsig:X509SerialNumber>152954066369386072212139427751237260635764892879</xmlsig:X509SerialNumber>
+      </xmlsig:X509IssuerSerial>
+    </ct:RootCertificateID>
+    <ct:RootCertificateID>
+      <xmlsig:X509IssuerSerial>
+        <xmlsig:X509IssuerName>CN=V2G Root CA ECDSA,O=lineworld</xmlsig:X509IssuerName>
+        <xmlsig:X509SerialNumber>722038374351361365963474852265291688299273697788</xmlsig:X509SerialNumber>
+      </xmlsig:X509IssuerSerial>
+    </ct:RootCertificateID>
+    <ct:RootCertificateID>
+      <xmlsig:X509IssuerSerial>
+        <xmlsig:X509IssuerName>CN=V2G Root CA EdDSA,O=lineworld</xmlsig:X509IssuerName>
+        <xmlsig:X509SerialNumber>327691138646561676928033591232443600467246191690</xmlsig:X509SerialNumber>
+      </xmlsig:X509IssuerSerial>
+    </ct:RootCertificateID>
+  </ListOfRootCertificateIDs>
+  <MaximumContractCertificateChains>3</MaximumContractCertificateChains>
+  <PrioritizedEMAIDs>
+    <EMAID>KRLWSCBSZ0TUKY3</EMAID>
+    <EMAID>KRLWSCJ8UM69O56</EMAID>
+  </PrioritizedEMAIDs>
+</CertificateInstallationReq>
