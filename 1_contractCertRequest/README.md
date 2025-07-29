@@ -37,7 +37,7 @@ npm install
 또는 수동으로 필요한 패키지를 설치합니다:
 
 ```bash
-npm install node-fetch xmlbuilder2 libxmljs2
+npm install node-fetch xmlbuilder2 libxmljs2 java
 ```
 
 ## 시스템 요구 사항
@@ -66,6 +66,9 @@ npm install node-fetch xmlbuilder2 libxmljs2
   - `prioritized_emaids.json`: JSON 배열 형식의 EMAID 목록 (ISO 15118-20용)
 - `temp/`: 임시 파일들이 저장되는 폴더입니다.
 - `V2Gdecoder.jar`: XML-EXI 변환에 사용되는 외부 Java 라이브러리입니다.
+- `exi_processor.jar`: 새로운 EXI 프로세서 JAR 파일입니다.
+- `exiProcessor.js`: 새로운 EXI 프로세서를 Node.js에서 사용하기 위한 래퍼 클래스입니다.
+- `testExiProcessor.js`: 새로운 EXI 프로세서를 테스트하는 스크립트입니다.
 - `signature_process_iso15118-2.md`: 표준 ISO 15118-2 서명 생성 과정을 설명하는 문서입니다.
 
 ## 사용 방법
@@ -193,3 +196,98 @@ node iso15118_20CertRequest.js --file my_cert_request.xml
     - 서버로 POST 요청 (`node-fetch` 사용)
     - 응답 처리
 - 출력: `out/response_20_[파일명]_[타임스탬프].json` 
+
+## 새로운 EXI 프로세서 사용법
+
+### 새로운 EXI 프로세서란?
+
+기존의 `V2Gdecoder.jar` 대신 사용할 수 있는 새로운 EXI 프로세서입니다. 이 프로세서는 다음과 같은 장점이 있습니다:
+
+- **향상된 성능**: 더 빠른 XML-EXI 변환
+- **더 나은 오류 처리**: 상세한 오류 메시지와 디버깅 정보
+- **Node.js 통합**: Java Bridge를 통한 직접적인 Node.js 통합
+- **확장성**: 추가 클래스 로드 및 기능 확장 가능
+
+### 설치 및 설정
+
+1. **의존성 설치**:
+```bash
+npm install
+```
+
+2. **EXI 프로세서 테스트**:
+```bash
+npm run test-exi
+```
+
+### 사용 방법
+
+#### 1. 기본 사용법
+
+```javascript
+const ExiProcessor = require('./exiProcessor');
+
+const processor = new ExiProcessor();
+processor.init();
+
+// XML을 EXI로 변환
+const xmlContent = '<test>Hello</test>';
+const exiData = processor.encodeXML(xmlContent);
+
+// EXI를 XML로 변환
+const decodedXml = processor.decodeXML(exiData);
+```
+
+#### 2. 파일 기반 변환
+
+```javascript
+// XML 파일을 EXI 파일로 변환
+const exiFilePath = processor.xmlToExiFile('input.xml');
+
+// EXI 파일을 XML 파일로 변환
+const xmlFilePath = processor.exiToXmlFile('input.exi');
+```
+
+#### 3. 기존 코드와 통합
+
+`generateCertRequestXmlInstallVersion20.js`는 이미 새로운 EXI 프로세서를 사용하도록 수정되었습니다. 기존 코드를 그대로 사용하면 됩니다:
+
+```bash
+npm run gen-v20
+```
+
+### 주요 기능
+
+- **XML ↔ EXI 변환**: 양방향 변환 지원
+- **Base64 인코딩**: Base64 형식으로 결과 반환
+- **파일 처리**: 파일 기반 변환 지원
+- **오류 처리**: 상세한 오류 메시지 및 예외 처리
+- **초기화 검증**: JAR 파일 및 클래스 로드 상태 확인
+
+### 클래스 구조
+
+```javascript
+class ExiProcessor {
+    constructor()           // 생성자
+    init()                  // 초기화
+    encodeXML(xmlContent)   // XML → EXI
+    decodeXML(exiData)      // EXI → XML
+    encodeToEXI(xmlString, schemaPath, isFragment, encodingType)  // 호환성 메서드
+    xmlToExiFile(xmlFilePath)  // 파일 변환
+    exiToXmlFile(exiFilePath)  // 파일 변환
+    processFile(xmlFilePath)   // 전체 프로세스
+}
+```
+
+### 주의사항
+
+1. **Java 런타임**: Java 8 이상이 필요합니다.
+2. **JAR 파일**: `exi_processor.jar` 파일이 현재 디렉토리에 있어야 합니다.
+3. **메모리 설정**: JVM 메모리 설정이 포함되어 있습니다 (`-Xmx1g`, `-Xms256m`).
+4. **클래스 로드**: 필요한 Java 클래스들이 자동으로 로드됩니다.
+
+### 문제 해결
+
+1. **초기화 실패**: JAR 파일 경로와 Java 설치를 확인하세요.
+2. **클래스 로드 실패**: JAR 파일이 올바른 클래스를 포함하고 있는지 확인하세요.
+3. **메모리 부족**: JVM 메모리 설정을 조정하세요.

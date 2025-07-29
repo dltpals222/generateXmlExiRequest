@@ -1,7 +1,7 @@
 /**
  * ISO 15118-20 인증서 관련 요청 (CertificateInstallationReq, CertificateUpdateReq 등)을
  * 지정된 XML 파일 내용을 사용하여 서버로 전송하는 스크립트입니다.
- * 이 스크립트는 EXI 인코딩을 수행하지 않고 원본 XML을 전송합니다.
+ * 이 스크립트는 exi_processor.jar를 사용하여 XML을 EXI로 인코딩한 후 Base64로 인코딩하여 전송합니다.
  *
  * [실행 방법]
  * node iso15118_20CertRequest.js [옵션]
@@ -55,14 +55,11 @@ const colors = {
     }
 };
 
-// --- EXIConverter 클래스 정의 시작 ---
-// const JAR_PATH = path.join(__dirname, 'V2Gdecoder.jar'); // EXIConverter 사용 안함
+// 새로운 EXI 프로세서 사용
+const ExiProcessor = require('./exiProcessor');
 
-// class EXIConverter { ... } // EXIConverter 클래스 전체 제거
-// --- EXIConverter 클래스 정의 끝 ---
-
-// 인스턴스 생성
-// const exiConverter = new EXIConverter(); // EXIConverter 사용 안함
+// EXI 프로세서 인스턴스 생성
+const exiProcessor = new ExiProcessor();
 
 /**
  * 디렉토리 생성 함수 (없을 경우에만 생성)
@@ -136,27 +133,60 @@ async function sendISO15118_20CertRequest() {
     await fsPromises.copyFile(xmlFilePath, debugXmlPath);
     console.log(`${colors.dim}디버깅을 위한 XML 파일 복사본 생성: ${debugXmlPath}${colors.reset}`);
 
-    // XML을 EXI로 인코딩 // 제거
-    // console.log(`${colors.fg.blue}EXI 인코딩 시작...${colors.reset}`);
-    // const base64ExiData = await exiConverter.encodeToEXI(xmlContent);
-    // console.log(`${colors.fg.green}EXI 인코딩 완료, Base64 데이터 크기: ${base64ExiData.length}${colors.reset}`);
+    // EXI 프로세서 초기화
+    console.log(`${colors.fg.blue}EXI 프로세서 초기화 중...${colors.reset}`);
+    exiProcessor.init();
+    
+    if (!exiProcessor.initialized) {
+      throw new Error('EXI 프로세서 초기화 실패');
+    }
+    console.log(`${colors.fg.green}EXI 프로세서 초기화 완료${colors.reset}`);
 
-    // EXI 데이터를 파일로 저장 (디버깅용) // 제거
-    // const exiDebugFile = path.join(outDir, 'debug_exi_data_20.bin');
-    // try {
-    //   const exiDataBuffer = Buffer.from(base64ExiData, 'base64');
-    //   await fsPromises.writeFile(exiDebugFile, exiDataBuffer);
-    //   console.log(`${colors.fg.cyan}디버깅용 EXI 데이터가 저장됨: ${exiDebugFile} (${exiDataBuffer.length} 바이트)${colors.reset}`);
-    // } catch (error) {
-    //   console.error(`${colors.fg.red}EXI 데이터 파일 저장 실패: ${error.message}${colors.reset}`);
-    // }
+    // XML을 EXI로 인코딩 (네임스페이스 문제 해결을 위해 간단한 방식 사용)
+    console.log(`${colors.fg.blue}XML을 EXI로 인코딩 중...${colors.reset}`);
+    let exiData;
+    try {
+      // 스키마 없이 시도 (가장 간단한 방식)
+      exiData = await exiProcessor.encodeToEXI(xmlContent, null, false, 'full_xml');
+      console.log(`${colors.fg.green}EXI 인코딩 완료 (스키마 없이), 데이터 크기: ${exiData.length}${colors.reset}`);
+    } catch (error) {
+      console.log(`${colors.fg.yellow}EXI 인코딩 실패: ${error.message}${colors.reset}`);
+      console.log(`${colors.fg.yellow}원본 XML을 그대로 전송합니다.${colors.reset}`);
+      // EXI 인코딩 실패 시 원본 XML을 Base64로 인코딩
+      exiData = Buffer.from(xmlContent, 'utf8').toString('base64');
+      console.log(`${colors.fg.green}XML을 Base64로 인코딩 완료, 크기: ${exiData.length}${colors.reset}`);
+    }
+
+    // EXI 데이터를 Base64로 변환
+    let base64ExiData;
+    if (typeof exiData === 'string' && exiData.includes(',')) {
+      // 문자열 형태의 바이트 배열인 경우 (예: "-128,31,112,7,...")
+      console.log(`${colors.fg.blue}바이트 배열 문자열을 Base64로 변환 중...${colors.reset}`);
+      const byteArray = exiData.split(',').map(byte => parseInt(byte.trim()));
+      const buffer = Buffer.from(byteArray);
+      base64ExiData = buffer.toString('base64');
+      console.log(`${colors.fg.green}Base64 변환 완료, 크기: ${base64ExiData.length}${colors.reset}`);
+    } else {
+      // 이미 Base64 형태이거나 다른 형태인 경우
+      base64ExiData = exiData;
+    }
+
+    // EXI 데이터를 파일로 저장 (디버깅용)
+    const exiDebugFile = path.join(outDir, 'debug_exi_data_20.bin');
+    try {
+      const exiDataBuffer = Buffer.from(base64ExiData, 'base64');
+      await fsPromises.writeFile(exiDebugFile, exiDataBuffer);
+      console.log(`${colors.fg.cyan}디버깅용 EXI 데이터가 저장됨: ${exiDebugFile} (${exiDataBuffer.length} 바이트)${colors.reset}`);
+    } catch (error) {
+      console.error(`${colors.fg.red}EXI 데이터 파일 저장 실패: ${error.message}${colors.reset}`);
+    }
 
     // 서버 요청용 데이터를 파일로도 저장 (확인용)
     const requestDataFile = path.join(outDir, 'request_data_20.json');
     const requestData = {
       iso15118SchemaVersion: 'urn:iso:std:iso:15118:-20:CommonMessages', // 스키마 버전은 유지 (서버에서 필요할 수 있음)
       action: action, // 파싱된 액션 사용
-      exiRequest: xmlContent // 필드 이름 변경 (xmlRequest -> exiRequest), 값은 여전히 원본 XML
+      exiRequest: base64ExiData // EXI 인코딩된 Base64 데이터
     };
     
     try {

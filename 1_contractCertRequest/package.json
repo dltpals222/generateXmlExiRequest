@@ -8,7 +8,9 @@
     "gen-v20": "node generateCertRequestXmlInstallVersion20.js",
     "request-v2": "node iso15118CertRequest.js",
     "request-v2-update": "node iso15118CertRequest.js update",
-    "request-v20": "node iso15118_20CertRequest.js"
+    "request-v20": "node iso15118_20CertRequest.js",
+    "test-exi": "node testExiProcessor.js",
+    "example-exi": "node exampleExiUsage.js"
   },
   "keywords": [
     "ocpp",
@@ -22,7 +24,8 @@
   "dependencies": {
     "node-fetch": "^3.3.2",
     "xmlbuilder2": "^3.1.1",
-    "libxmljs2": "^0.31.0"
+    "libxmljs2": "^0.31.0",
+    "java": "^0.12.1"
   },
   "engines": {
     "node": ">=14.0.0"

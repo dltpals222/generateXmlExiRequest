@@ -133,96 +133,73 @@ const exec = util.promisify(execCb);
 const NAMESPACES = {
     ns: 'urn:iso:std:iso:15118:-20:CommonMessages', // Default namespace
     ct: 'urn:iso:std:iso:15118:-20:CommonTypes',
-    xmlsig: 'http://www.w3.org/2000/09/xmldsig#', // XML Signature namespace
+    sig: 'http://www.w3.org/2000/09/xmldsig#', // XML Signature namespace (xmlsig -> sig로 변경)
     xsi: 'http://www.w3.org/2001/XMLSchema-instance'
-    // xmlsig 네임스페이스는 RootCertificateID 내부에서 사용되므로, 필요시 동적으로 추가하거나 확인 필요
+    // sig 네임스페이스는 RootCertificateID 내부에서 사용되므로, 필요시 동적으로 추가하거나 확인 필요
 };
 
-// --- EXIConverter 클래스 정의 (V2 버전 기반 + 스키마/프래그먼트 옵션 추가 시도) ---
+// 새로운 EXI 프로세서 사용
+const ExiProcessor = require('./exiProcessor');
+
+// --- EXIConverter 클래스 정의 (새로운 EXI 프로세서 사용) ---
 class EXIConverter {
-    // schemaPath 와 isFragment 옵션 추가
-    async encodeToEXI(xmlString, schemaPath = null, isFragment = false, encodingType = 'default') {
-        const tempXmlFile = path.join(__dirname, `temp_encode_${encodingType}_${Date.now()}.xml`);
-        const tempExiFile = path.join(__dirname, `temp_encode_${encodingType}_${Date.now()}.xml.exi`);
-        console.log(`${colors.fg.cyan}  [EXI Converter] Encoding XML (${encodingType}) to EXI... Fragment: ${isFragment}, Schema: ${schemaPath || 'None'}${colors.reset}`);
+    constructor() {
+        this.initialized = false;
+        this.exiProcessor = new ExiProcessor();
+    }
+
+    // 초기화
+    async init() {
         try {
-            if (!xmlString || xmlString.trim() === '') throw new Error('Empty XML input');
-
-            console.log(`${colors.dim}  [EXI Converter] Writing XML to temp file: ${tempXmlFile}${colors.reset}`);
-            await fs.writeFile(tempXmlFile, xmlString, 'utf8');
-
-            let executeJavaCommandArgs = [
-                '-jar', JAR_PATH,
-                '-x', // XML to EXI
-                '-f', tempXmlFile,
-                '-o', tempExiFile
-            ];
-
-            // 스키마 및 프래그먼트 옵션 추가 (JAR가 지원한다고 가정)
-            if (schemaPath) {
-                console.log(`${colors.dim}  [EXI Converter] Using schema: ${schemaPath}${colors.reset}`);
-                // 실제 JAR 옵션은 다를 수 있음 (예: -schema, --schema, -xsd 등)
-                executeJavaCommandArgs.push('-schema', schemaPath);
+            this.exiProcessor.init();
+            this.initialized = this.exiProcessor.initialized;
+            if (this.initialized) {
+                console.log(`${colors.fg.green}  [EXI Converter] 새로운 EXI 프로세서 초기화 성공${colors.reset}`);
+            } else {
+                console.error(`${colors.fg.red}  [EXI Converter] 새로운 EXI 프로세서 초기화 실패${colors.reset}`);
             }
-            if (isFragment) {
-                console.log(`${colors.dim}  [EXI Converter] Encoding as fragment.${colors.reset}`);
-                // 실제 JAR 옵션은 다를 수 있음 (예: -fragment, --fragment 등)
-                executeJavaCommandArgs.push('-fragment');
-            }
-
-            console.log(`${colors.dim}  [EXI Converter] Executing Java command...${colors.reset}`);
-            await this.executeJavaCommand(executeJavaCommandArgs);
-
-            console.log(`${colors.dim}  [EXI Converter] Reading encoded EXI file: ${tempExiFile}${colors.reset}`);
-            const exiDataBuffer = await fs.readFile(tempExiFile);
-            console.log(`${colors.dim}  [EXI Converter] Successfully read EXI data (length: ${exiDataBuffer.length})${colors.reset}`);
-
-            // EXI 헤더 수정은 원본 메시지 인코딩 시 필요할 수 있으나, 프래그먼트 서명에는 불필요할 수 있음 (일단 유지)
-            // const modifiedExiData = Buffer.from(exiDataBuffer);
-            // if (modifiedExiData.length > 2) {
-            //    modifiedExiData[2] = modifiedExiData[2] & 0b11111011;
-            //    console.log('  [EXI Converter] Applied EXI header modification.');
-            // } else {
-            //    console.warn('  [EXI Converter] Warn: EXI data too short for header modification.');
-            // }
-            // const base64Result = modifiedExiData.toString('base64');
-            const base64Result = exiDataBuffer.toString('base64'); // 수정 없이 Base64 반환
-
-            if (!base64Result || base64Result.trim() === '') throw new Error('Empty EXI result after encoding');
-            console.log(`${colors.fg.green}  [EXI Converter] Encoding successful (${encodingType}). Base64 length: ${base64Result.length}${colors.reset}`);
-            return base64Result;
-
         } catch (error) {
-            console.error(`${colors.fg.red}  [EXI Converter] Error in encodeToEXI (${encodingType}):${colors.reset}`, error);
-            // 오류 발생 시 임시 파일 삭제 시도
-            await fs.unlink(tempXmlFile).catch(err => console.error(`${colors.fg.red}  Error deleting temp XML file:${colors.reset} ${err.message}`));
-            await fs.unlink(tempExiFile).catch(err => console.error(`${colors.fg.red}  Error deleting temp EXI file:${colors.reset} ${err.message}`));
-            throw error;
-        } finally {
-            // 성공 시 임시 파일 삭제
-            await fs.unlink(tempXmlFile).catch(err => {});
-            await fs.unlink(tempExiFile).catch(err => {});
+            console.error(`${colors.fg.red}  [EXI Converter] 초기화 오류:${colors.reset}`, error);
+            this.initialized = false;
         }
     }
 
-    executeJavaCommand(args) {
-         return new Promise((resolve, reject) => {
-            const java = spawn('java', args);
-            let output = '';
-            let error = '';
-            console.log(`${colors.dim}    Java command:${colors.reset}`, 'java', args.join(' '));
-            java.stdout.on('data', (data) => { output += data.toString(); });
-            java.stderr.on('data', (data) => { error += data.toString(); console.error(`${colors.fg.yellow}    Java stderr:${colors.reset}`, data.toString()); });
-            java.on('error', (err) => { console.error(`${colors.fg.red}    Java spawn error:${colors.reset}`, err); reject(err); });
-            java.on('close', (code) => {
-                console.log(`${colors.dim}    Java process exit code: ${code}${colors.reset}`);
-                if (code === 0) { resolve(output); }
-                else { reject(new Error(`${colors.fg.red}Java execution failed (code: ${code}). Stderr: ${error || 'N/A'}${colors.reset}`)); }
-            });
-        });
+    // schemaPath 와 isFragment 옵션 추가
+    async encodeToEXI(xmlString, schemaPath = null, isFragment = false, encodingType = 'default') {
+        if (!this.initialized) {
+            throw new Error('EXI 프로세서가 초기화되지 않았습니다.');
+        }
+
+        console.log(`${colors.fg.cyan}  [EXI Converter] 새로운 EXI 프로세서로 XML 인코딩 중... (${encodingType})${colors.reset}`);
+        
+        try {
+            // 새로운 EXI 프로세서 사용
+            const base64Result = await this.exiProcessor.encodeToEXI(xmlString, schemaPath, isFragment, encodingType);
+
+            if (!base64Result || base64Result.trim() === '') {
+                throw new Error('Empty EXI result after encoding');
+            }
+            
+            console.log(`${colors.fg.green}  [EXI Converter] 인코딩 성공 (${encodingType}). Base64 길이: ${base64Result.length}${colors.reset}`);
+            return base64Result;
+
+        } catch (error) {
+            console.error(`${colors.fg.red}  [EXI Converter] 인코딩 오류 (${encodingType}):${colors.reset}`, error);
+            throw error;
+        }
     }
 }
 const exiConverter = new EXIConverter(); // 인스턴스 생성
+
+// EXI 프로세서 초기화
+(async () => {
+    try {
+        await exiConverter.init();
+        console.log('EXI 프로세서 초기화 완료');
+    } catch (error) {
+        console.error('EXI 프로세서 초기화 실패:', error);
+    }
+})();
 
 // --- 인증서 분석 및 알고리즘 결정 함수 ---
 async function getAlgorithmsFromCert(certPath) {
@@ -500,25 +477,25 @@ ${oemProvCertChainXmlString}${colors.reset}`);
         // --- 3. SignatureValue 계산 ---
         console.log(`${colors.fg.blue}[3/7] SignatureValue 계산 시작 (Using ${signingAlgorithms.signatureMethod})...${colors.reset}`);
         try {
-            // 1. <xmlsig:SignedInfo> XML 프래그먼트 생성
-            console.log('  1. Generating <xmlsig:SignedInfo> XML fragment...');
+            // 1. <sig:SignedInfo> XML 프래그먼트 생성
+            console.log('  1. Generating <sig:SignedInfo> XML fragment...');
             const signedInfoXml = create({ version: '1.0', encoding: 'UTF-8' })
-                .ele(NAMESPACES.xmlsig, 'SignedInfo')
-                .ele(NAMESPACES.xmlsig, 'CanonicalizationMethod', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' })
+                .ele(NAMESPACES.sig, 'SignedInfo')
+                .ele(NAMESPACES.sig, 'CanonicalizationMethod', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' })
                 .up()
-                .ele(NAMESPACES.xmlsig, 'SignatureMethod', { Algorithm: signingAlgorithms.signatureMethod })
+                .ele(NAMESPACES.sig, 'SignatureMethod', { Algorithm: signingAlgorithms.signatureMethod })
                 .up()
-                .ele(NAMESPACES.xmlsig, 'Reference', { URI: `#${elementToDigestId}` })
-                .ele(NAMESPACES.xmlsig, 'DigestMethod', { Algorithm: signingAlgorithms.digestMethod })
+                .ele(NAMESPACES.sig, 'Reference', { URI: `#${elementToDigestId}` })
+                .ele(NAMESPACES.sig, 'DigestMethod', { Algorithm: signingAlgorithms.digestMethod })
                 .up()
-                .ele(NAMESPACES.xmlsig, 'DigestValue')
+                .ele(NAMESPACES.sig, 'DigestValue')
                 .txt(calculatedDigestValue);
 
             const signedInfoXmlString = signedInfoXml.toString({ prettyPrint: false });
             console.log(`[Debug] XML Fragment for Signature:\n${signedInfoXmlString}`);
 
-            // 2. <xmlsig:SignedInfo> 프래그먼트를 EXI로 인코딩
-            console.log('  2. Encoding <xmlsig:SignedInfo> fragment to EXI using xmldsig-core-schema.xsd...');
+            // 2. <sig:SignedInfo> 프래그먼트를 EXI로 인코딩
+            console.log('  2. Encoding <sig:SignedInfo> fragment to EXI using xmldsig-core-schema.xsd...');
             const signedInfoExiBase64 = await exiConverter.encodeToEXI(
                 signedInfoXmlString,
                 XMLDSIG_SCHEMA_PATH,
@@ -579,13 +556,13 @@ ${oemProvCertChainXmlString}${colors.reset}`);
         // --- 4. 최종 XML 조립 (계산된 SignatureValue 적용) ---
         console.log(`${colors.fg.blue}[4/7] 최종 XML 구조 조립...${colors.reset}`);
         const root = create({ version: '1.0', encoding: 'UTF-8' })
-            .ele(NAMESPACES.ns, 'CertificateInstallationReq', { // Root element with default namespace
-                'xmlns': NAMESPACES.ns, // Default namespace declaration
-                'xmlns:ct': NAMESPACES.ct,
-                'xmlns:xmlsig': NAMESPACES.xmlsig,
-                'xmlns:xsi': NAMESPACES.xsi,
-                'xsi:schemaLocation': 'urn:iso:std:iso:15118:-20:CommonMessages V2G_CI_CommonMessages.xsd' // 스키마 위치 명시 (실제 유효성 검증에 사용될 수 있음)
-            });
+                    .ele(NAMESPACES.ns, 'CertificateInstallationReq', { // Root element with default namespace
+            'xmlns': NAMESPACES.ns, // Default namespace declaration
+            'xmlns:ct': NAMESPACES.ct,
+            'xmlns:sig': NAMESPACES.sig,
+            'xmlns:xsi': NAMESPACES.xsi,
+            'xsi:schemaLocation': 'urn:iso:std:iso:15118:-20:CommonMessages V2G_CI_CommonMessages.xsd' // 스키마 위치 명시 (실제 유효성 검증에 사용될 수 있음)
+        });
 
         // Header (ISO 15118-20 CommonTypes 네임스페이스 사용)
         const header = root.ele(NAMESPACES.ct, 'Header');
@@ -593,23 +570,23 @@ ${oemProvCertChainXmlString}${colors.reset}`);
         header.ele(NAMESPACES.ct, 'TimeStamp').txt(Math.floor(Date.now() / 1000)); // 초 단위 타임스탬프 (xsd:unsignedLong)
 
         // Signature (XMLDSig 네임스페이스 사용) - Header 안으로 이동
-        const signature = header.ele(NAMESPACES.xmlsig, 'Signature'); // 수정된 위치 (Header 아래)
+        const signature = header.ele(NAMESPACES.sig, 'Signature'); // 수정된 위치 (Header 아래)
 
-        const signedInfo = signature.ele(NAMESPACES.xmlsig, 'SignedInfo');
+        const signedInfo = signature.ele(NAMESPACES.sig, 'SignedInfo');
         // [V2G20-765] CanonicalizationMethod Algorithm 수정
-        signedInfo.ele(NAMESPACES.xmlsig, 'CanonicalizationMethod', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
+        signedInfo.ele(NAMESPACES.sig, 'CanonicalizationMethod', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
         // [V2G20-2473] SignatureMethod Algorithm 수정 (ecdsa-sha512)
-        signedInfo.ele(NAMESPACES.xmlsig, 'SignatureMethod', { Algorithm: signingAlgorithms.signatureMethod });
+        signedInfo.ele(NAMESPACES.sig, 'SignatureMethod', { Algorithm: signingAlgorithms.signatureMethod });
 
-        const reference = signedInfo.ele(NAMESPACES.xmlsig, 'Reference', { URI: `#${elementToDigestId}` }); // Use constant ID
-        const transforms = reference.ele(NAMESPACES.xmlsig, 'Transforms');
+        const reference = signedInfo.ele(NAMESPACES.sig, 'Reference', { URI: `#${elementToDigestId}` }); // Use constant ID
+        const transforms = reference.ele(NAMESPACES.sig, 'Transforms');
         // [V2G20-766] Transform Algorithm 수정, [V2G20-767] Transform은 하나만
-        transforms.ele(NAMESPACES.xmlsig, 'Transform', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
+        transforms.ele(NAMESPACES.sig, 'Transform', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
         // [V2G20-2475] DigestMethod Algorithm 수정 (sha512)
-        reference.ele(NAMESPACES.xmlsig, 'DigestMethod', { Algorithm: signingAlgorithms.digestMethod });
-        reference.ele(NAMESPACES.xmlsig, 'DigestValue').txt(calculatedDigestValue); // 계산된 DigestValue 사용
+        reference.ele(NAMESPACES.sig, 'DigestMethod', { Algorithm: signingAlgorithms.digestMethod });
+        reference.ele(NAMESPACES.sig, 'DigestValue').txt(calculatedDigestValue); // 계산된 DigestValue 사용
 
-        signature.ele(NAMESPACES.xmlsig, 'SignatureValue').txt(calculatedSignatureValue); // 계산된 값 사용 (현재 Placeholder)
+        signature.ele(NAMESPACES.sig, 'SignatureValue').txt(calculatedSignatureValue); // 계산된 값 사용 (현재 Placeholder)
 
         // OEMProvisioningCertificateChain (Id 추가하여 서명 대상 식별)
         const finalOemProvCertChain = root.ele(NAMESPACES.ns, 'OEMProvisioningCertificateChain', { Id: elementToDigestId }); // Use constant ID
@@ -627,12 +604,12 @@ ${oemProvCertChainXmlString}${colors.reset}`);
         const listOfRoots = root.ele(NAMESPACES.ns, 'ListOfRootCertificateIDs');
         rootCertInfos.forEach(certInfo => {
             const rootCertId = listOfRoots.ele(NAMESPACES.ct, 'RootCertificateID'); // ct 네임스페이스 사용
-            // 예제에는 xmlsig:X509IssuerSerial 이 있지만, ds 네임스페이스가 표준임. ds 사용. -> xmlsig 사용으로 통일
-            // 네임스페이스 접두사 'xmlsig'는 예제에서 정의되지 않았으므로 'ds'를 사용하는 것이 안전. -> xmlsig 사용
-            // 실제 스키마(xmldsig-core-schema.xsd) 확인 필요. 여기서는 ds로 진행. -> xmlsig 사용
-            const issuerSerial = rootCertId.ele(NAMESPACES.xmlsig, 'X509IssuerSerial');
-            issuerSerial.ele(NAMESPACES.xmlsig, 'X509IssuerName').txt(certInfo.issuerName);
-            issuerSerial.ele(NAMESPACES.xmlsig, 'X509SerialNumber').txt(certInfo.serialNumber);
+            // 예제에는 sig:X509IssuerSerial 이 있지만, ds 네임스페이스가 표준임. ds 사용. -> sig 사용으로 통일
+            // 네임스페이스 접두사 'sig'는 예제에서 정의되지 않았으므로 'ds'를 사용하는 것이 안전. -> sig 사용
+            // 실제 스키마(xmldsig-core-schema.xsd) 확인 필요. 여기서는 ds로 진행. -> sig 사용
+            const issuerSerial = rootCertId.ele(NAMESPACES.sig, 'X509IssuerSerial');
+            issuerSerial.ele(NAMESPACES.sig, 'X509IssuerName').txt(certInfo.issuerName);
+            issuerSerial.ele(NAMESPACES.sig, 'X509SerialNumber').txt(certInfo.serialNumber);
         });
 
         // MaximumContractCertificateChains
@@ -692,7 +669,7 @@ ${oemProvCertChainXmlString}${colors.reset}`);
 function createErrorXmlV20(sessionId, oemCertBase64, rootCertInfos, digestValue, signatureValue, algorithms) {
     const root = create({ version: '1.0', encoding: 'UTF-8' })
         .ele(NAMESPACES.ns, 'CertificateInstallationReq', {
-            'xmlns': NAMESPACES.ns, 'xmlns:ct': NAMESPACES.ct, /* 'xmlns:ds': NAMESPACES.ds, */ 'xmlns:xmlsig': NAMESPACES.xmlsig,
+            'xmlns': NAMESPACES.ns, 'xmlns:ct': NAMESPACES.ct, /* 'xmlns:ds': NAMESPACES.ds, */ 'xmlns:sig': NAMESPACES.sig,
             'xmlns:xsi': NAMESPACES.xsi,
             'xsi:schemaLocation': 'urn:iso:std:iso:15118:-20:CommonMessages V2G_CI_CommonMessages.xsd'
         });
@@ -702,17 +679,17 @@ function createErrorXmlV20(sessionId, oemCertBase64, rootCertInfos, digestValue,
     header.ele(NAMESPACES.ct, 'TimeStamp').txt(Math.floor(Date.now() / 1000));
 
     // Signature (Error Placeholder) - Header 안으로 이동
-    const signature = header.ele(NAMESPACES.xmlsig, 'Signature'); // 수정된 위치
+    const signature = header.ele(NAMESPACES.sig, 'Signature'); // 수정된 위치
 
-    const signedInfo = signature.ele(NAMESPACES.xmlsig, 'SignedInfo');
+    const signedInfo = signature.ele(NAMESPACES.sig, 'SignedInfo');
     // 알고리즘 적용
-    signedInfo.ele(NAMESPACES.xmlsig, 'CanonicalizationMethod', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
-    signedInfo.ele(NAMESPACES.xmlsig, 'SignatureMethod', { Algorithm: algorithms.signatureMethod });
-    const reference = signedInfo.ele(NAMESPACES.xmlsig, 'Reference', { URI: `#${DEFAULT_ELEMENT_TO_DIGEST_ID}` });
-    reference.ele(NAMESPACES.xmlsig, 'Transforms').ele(NAMESPACES.xmlsig, 'Transform', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
-    reference.ele(NAMESPACES.xmlsig, 'DigestMethod', { Algorithm: algorithms.digestMethod });
-    reference.ele(NAMESPACES.xmlsig, 'DigestValue').txt(digestValue); // ERROR_DIGEST_VALUE
-    signature.ele(NAMESPACES.xmlsig, 'SignatureValue').txt(signatureValue); // ERROR_SIGNATURE_VALUE
+    signedInfo.ele(NAMESPACES.sig, 'CanonicalizationMethod', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
+    signedInfo.ele(NAMESPACES.sig, 'SignatureMethod', { Algorithm: algorithms.signatureMethod });
+    const reference = signedInfo.ele(NAMESPACES.sig, 'Reference', { URI: `#${DEFAULT_ELEMENT_TO_DIGEST_ID}` });
+    reference.ele(NAMESPACES.sig, 'Transforms').ele(NAMESPACES.sig, 'Transform', { Algorithm: 'http://www.w3.org/TR/canonical-exi/' });
+    reference.ele(NAMESPACES.sig, 'DigestMethod', { Algorithm: algorithms.digestMethod });
+    reference.ele(NAMESPACES.sig, 'DigestValue').txt(digestValue); // ERROR_DIGEST_VALUE
+    signature.ele(NAMESPACES.sig, 'SignatureValue').txt(signatureValue); // ERROR_SIGNATURE_VALUE
     // KeyInfo 제거됨
     // Body (Error Placeholder)
     const oemProvCertChain = root.ele(NAMESPACES.ns, 'OEMProvisioningCertificateChain', { Id: DEFAULT_ELEMENT_TO_DIGEST_ID }); // Use constant ID
@@ -733,9 +710,9 @@ function createErrorXmlV20(sessionId, oemCertBase64, rootCertInfos, digestValue,
     if (rootCertInfos && rootCertInfos.length > 0) {
         rootCertInfos.forEach(certInfo => {
              const rootCertId = listOfRoots.ele(NAMESPACES.ct, 'RootCertificateID');
-             const issuerSerial = rootCertId.ele(NAMESPACES.xmlsig, 'X509IssuerSerial');
-             issuerSerial.ele(NAMESPACES.xmlsig, 'X509IssuerName').txt(certInfo.issuerName);
-             issuerSerial.ele(NAMESPACES.xmlsig, 'X509SerialNumber').txt(certInfo.serialNumber);
+                         const issuerSerial = rootCertId.ele(NAMESPACES.sig, 'X509IssuerSerial');
+            issuerSerial.ele(NAMESPACES.sig, 'X509IssuerName').txt(certInfo.issuerName);
+            issuerSerial.ele(NAMESPACES.sig, 'X509SerialNumber').txt(certInfo.serialNumber);
         });
     } else {
          listOfRoots.txt("<!-- 루트 인증서 정보 로드 실패 -->");
