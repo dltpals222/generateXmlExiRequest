@@ -1,36 +1,49 @@
 {
-  "name": "iso15118-certificate-request",
+  "name": "iso15118-cert-generator",
   "version": "1.0.0",
-  "description": "ISO15118-20 Certificate Installation Request Tool",
-  "main": "sendCertificateRequest.js",
-  "bin": {
-    "iso15118-exi": "./iso15118-exi-tool/bin/iso15118-exi-cli.js"
-  },
+  "description": "ISO 15118-2/20 인증서 요청 XML 생성 도구",
+  "main": "gen-v20.js",
   "scripts": {
-    "start": "node sendCertificateRequest.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "install-exi": "set CONTRACTCERTREQUEST_PATH=C:\\Users\\lw\\Desktop\\LSM\\ocpp_certificate_test\\contractCertRequest && cd iso15118-exi-tool && node-gyp rebuild",
-    "build-exi": "cross-env CONTRACTCERTREQUEST_PATH=%CD%\\contractCertRequest cd iso15118-exi-tool && .\\compile_library.sh",
-    "postinstall": "chmod +x iso15118-exi-tool/compile_library.sh iso15118-exi-tool/bin/iso15118-exi-cli.js"
+    "gen-v2-install": "node gen-v2.js install",
+    "gen-v2-update": "node gen-v2.js update",
+    "gen-v20": "node gen-v20.js",
+    "gen-v20-req": "node gen-v20.js req auto include",
+    "gen-v20-req-noemaid": "node gen-v20.js req auto ignore",
+    "gen-v20-res": "node gen-v20.js res auto",
+    "gen-v20-ecdsa": "node gen-v20.js req ecdsa include",
+    "gen-v20-ecdsa-noemaid": "node gen-v20.js req ecdsa ignore",
+    "gen-v20-ecdsa-res": "node gen-v20.js res ecdsa",
+    "gen-v20-ed448": "node gen-v20.js req ed448 include",
+    "gen-v20-ed448-noemaid": "node gen-v20.js req ed448 ignore",
+    "gen-v20-ed448-res": "node gen-v20.js res ed448",
+    "send-xml": "node request/send-xml.js",
+    "send-exi": "node request/send-xml-exi.js",
+    "send-xml-ecdsa-emaid": "node request/send-xml.js certificateInstallationReq_v20_ecdsa_emaid.xml",
+    "send-xml-ecdsa-noemaid": "node request/send-xml.js certificateInstallationReq_v20_ecdsa_noemaid.xml",
+    "send-xml-ed448-emaid": "node request/send-xml.js certificateInstallationReq_v20_ed448_emaid.xml",
+    "send-xml-ed448-noemaid": "node request/send-xml.js certificateInstallationReq_v20_ed448_noemaid.xml",
+    "send-exi-ecdsa-emaid": "node request/send-xml-exi.js -f certificateInstallationReq_v20_ecdsa_emaid.xml",
+    "send-exi-ecdsa-noemaid": "node request/send-xml-exi.js -f certificateInstallationReq_v20_ecdsa_noemaid.xml",
+    "send-exi-ed448-emaid": "node request/send-xml-exi.js -f certificateInstallationReq_v20_ed448_emaid.xml",
+    "send-exi-ed448-noemaid": "node request/send-xml-exi.js -f certificateInstallationReq_v20_ed448_noemaid.xml",
+    "decode-exi": "node response/decode-exi.js",
+    "validate-response": "node response/validate-response.js",
+    "init": "node initDirFileTree.js"
   },
   "keywords": [
     "iso15118",
-    "exi",
-    "certificate"
+    "certificate",
+    "xml",
+    "exi"
   ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.6.0",
-    "commander": "^13.1.0",
     "java": "^0.16.1",
+    "libxmljs2": "^0.31.0",
     "node-fetch": "^3.3.2",
+    "xml2js": "^0.6.2",
     "xmlbuilder2": "^3.1.1"
-  },
-  "devDependencies": {
-    "cross-env": "^7.0.3",
-    "node-addon-api": "^8.3.1",
-    "node-gyp": "^11.2.0"
   },
   "engines": {
     "node": ">=14.0.0"
