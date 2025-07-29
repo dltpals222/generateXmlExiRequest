@@ -150,6 +150,12 @@ async function decodeExiResponse(exiResponseFile) {
     const exiResponsePath = path.join(requestOutputDir, exiResponseFile);
     const decodeOutputDir = path.join(__dirname, 'decode');
     
+    // decode 디렉토리 생성 (없는 경우)
+    if (!fs.existsSync(decodeOutputDir)) {
+        fs.mkdirSync(decodeOutputDir, { recursive: true });
+        console.log(`📁 디렉토리 생성됨: ${decodeOutputDir}`);
+    }
+    
     // EXI 프로세서 초기화
     const exiProcessor = new ExiProcessor();
     exiProcessor.init();
